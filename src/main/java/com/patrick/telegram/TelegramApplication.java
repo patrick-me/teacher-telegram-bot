@@ -14,7 +14,7 @@ public class TelegramApplication {
         initTelegramBot();
     }
 
-    public static void initTelegramBot() {
+    private static void initTelegramBot() {
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
