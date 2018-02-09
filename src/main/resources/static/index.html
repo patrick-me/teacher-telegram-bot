@@ -1,15 +1,67 @@
 <!DOCTYPE HTML>
-<html>
+<html ng-app="bot-app">
 <head>
     <title>Welcome</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script src="/webjars/jquery/3.3.1/jquery.min.js"></script>
+    <script src="/webjars/angularjs/1.6.8/angular.min.js"></script>
     <script src="/webjars/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
     <link rel="stylesheet" href="/webjars/bootstrap/4.0.0/css/bootstrap.min.css"/>
+
+    <script src="/js/index.js"></script>
+
 </head>
-<body class="container">
+<body class="container-fluid" ng-controller="bot-controller" ng-cloak>
 <div class="page-header">
-    <h1>Example Page Header</h1>
+    <br>
+    <h1 style="text-align: center">Teacher's page</h1>
+    <br>
 </div>
-<p>Get your lessons <a href="/lessons">here</a></p>
+<div class="row" style="height: 800px; background-color: lightgrey">
+    <div id="menu" class="col-xl-3" style="border: 1px solid">
+        <ul class="list-group">
+            <li class="list-group-item" ng-click="showPage = 'showLessons'">Lessons</li>
+            <li class="list-group-item" ng-click="showPage = 'showUsers'">Users</li>
+            <li class="list-group-item" ng-click="showPage = 'showBots'">Bots</li>
+        </ul>
+    </div>
+
+    <div id="content" class="col-xl-9" style="border: 1px solid">
+        <div ng-if="showPage == 'showLessons'">
+            <p>Lesson's list</p>
+            <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showNewLesson'">Add New</button>
+            <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showListLesson'">Show List</button>
+            <br>
+            <br>
+
+            <div ng-if="showSubPage == 'showNewLesson'">
+                <br>
+                <input type="text" class="form-control" placeholder="Lesson's Name">
+                <input type="text" class="form-control" placeholder="Lesson's Group">
+
+                <input type="text" class="form-control" placeholder="Question">
+                <input type="text" class="form-control" placeholder="Answer">
+                <input type="text" class="form-control" placeholder="KeyBoard rows separeted by ';'">
+                <br>
+
+                <button type="button" class="btn btn-secondary float-right">Save</button>
+            </div>
+
+            <ul ng-if="showSubPage == 'showListLesson'" class="list-group" ng-repeat="l in lessons">
+                <li class="list-group-item" ng-click="showPage = 'l.group l.name'">{{l.group}}, {{l.name}}</li>
+            </ul>
+        </div>
+
+        <div ng-if="showPage == 'showUsers'">
+            <p>User's content</p>
+        </div>
+
+        <div ng-if="showPage == 'showBots'">
+            <p>Bots's content</p>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
