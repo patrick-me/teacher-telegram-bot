@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <script src="/webjars/jquery/3.3.1/jquery.min.js"></script>
     <script src="/webjars/angularjs/1.6.8/angular.min.js"></script>
+    <script src="/webjars/angular-filter/0.4.9/angular-filter.min.js"></script>
     <script src="/webjars/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
     <link rel="stylesheet" href="/webjars/bootstrap/4.0.0/css/bootstrap.min.css"/>
@@ -37,20 +38,29 @@
 
             <div ng-if="showSubPage == 'showNewLesson'">
                 <br>
-                <input type="text" class="form-control" placeholder="Lesson's Name">
-                <input type="text" class="form-control" placeholder="Lesson's Group">
+                <input type="text" class="form-control" ng-model="newLesson.name" placeholder="Lesson's Name">
+                <input type="text" class="form-control" ng-model="newLesson.group" placeholder="Lesson's Group">
 
-                <input type="text" class="form-control" placeholder="Question">
-                <input type="text" class="form-control" placeholder="Answer">
-                <input type="text" class="form-control" placeholder="KeyBoard rows separeted by ';'">
+                <input type="text" class="form-control" ng-model="newLesson.question" placeholder="Question">
+                <input type="text" class="form-control" ng-model="newLesson.answer" placeholder="Answer">
+                <input type="text" class="form-control" ng-model="newLesson.keyboard"
+                       placeholder="KeyBoard rows separeted by ';'">
                 <br>
 
-                <button type="button" class="btn btn-secondary float-right">Save</button>
+                <button type="button" class="btn btn-secondary float-right" ng-click="save(newLesson)">Save</button>
             </div>
 
-            <ul ng-if="showSubPage == 'showListLesson'" class="list-group" ng-repeat="l in lessons">
-                <li class="list-group-item" ng-click="showPage = 'l.group l.name'">{{l.group}}, {{l.name}}</li>
-            </ul>
+            <div ng-if="showSubPage == 'showListLesson'" style="height: 500px; overflow-y: scroll;">
+                {{message}}
+
+                <ul class="list-group" ng-repeat="(grp, lesson) in lessons | groupBy: 'group'">
+                    {{ grp }}
+                    <li class="list-group-item" ng-repeat="l in lesson" ng-click="showPage = 'l.group l.name'">
+                        {{ l.name }}
+                    </li>
+                </ul>
+            </div>
+
         </div>
 
         <div ng-if="showPage == 'showUsers'">
@@ -58,7 +68,7 @@
         </div>
 
         <div ng-if="showPage == 'showBots'">
-            <p>Bots's content</p>
+            <p>Bot's content</p>
         </div>
     </div>
 </div>
