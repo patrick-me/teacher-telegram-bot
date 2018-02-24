@@ -1,6 +1,6 @@
 package com.patrick.telegram.controller;
 
-import com.patrick.telegram.model.QuestionLesson;
+import com.patrick.telegram.model.Lesson;
 import com.patrick.telegram.service.LessonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +18,12 @@ public class LessonController {
     LessonService lessonService;
 
     @GetMapping
-    public Collection<QuestionLesson> getLessons() {
-        return lessonService.getQuestionLessons();
+    public Collection<Lesson> getLessons() {
+        return lessonService.getLessons();
     }
 
     @PostMapping
-    public void addLesson(@RequestBody QuestionLesson lesson) {
-        lessonService.addQuestionLesson(lesson);
+    public void addLesson(@RequestBody Lesson lesson) {
+        lessonService.addLesson(lesson);
     }
 }

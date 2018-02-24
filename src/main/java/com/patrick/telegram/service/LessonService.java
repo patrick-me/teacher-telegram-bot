@@ -1,7 +1,7 @@
 package com.patrick.telegram.service;
 
-import com.patrick.telegram.model.QuestionLesson;
-import com.patrick.telegram.repository.QuestionLessonRepository;
+import com.patrick.telegram.model.Lesson;
+import com.patrick.telegram.repository.LessonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +14,13 @@ import java.util.Collection;
 public class LessonService {
 
     @Autowired
-    private QuestionLessonRepository questionLessonRepository;
+    private LessonRepository lessonRepository;
 
-    public Collection<QuestionLesson> getQuestionLessons() {
-        return questionLessonRepository.findAll();
-        //new QuestionLesson(1, "group1", "name1", "What the question is?", "Some answer1, Some ansewer2, Nothing", "Nothing");
+    public Collection<Lesson> getLessons() {
+        return lessonRepository.findAll();
     }
 
-    public void addQuestionLesson(QuestionLesson lesson) {
-        questionLessonRepository.save(lesson);
+    public void addLesson(Lesson lesson) {
+        lessonRepository.save(lesson);
     }
 }
