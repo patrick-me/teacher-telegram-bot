@@ -1,4 +1,4 @@
-<p ng-init="showSubPage = 'showList'">Question's types</p>
+<h4 ng-init="showSubPage = 'showList'">Sentences</h4>
 <div class="btn-group" role="group" aria-label="">
     <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showList'">Show List</button>
     <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showNew'">Add New</button>
@@ -10,30 +10,24 @@
 <div ng-if="showSubPage == 'showNew'">
     <br>
     <input type="text" class="form-control" ng-model="entity.name" placeholder="Name">
-    <input type="text" class="form-control" ng-model="entity.description" placeholder="Description">
+
+    <!--input type="text" class="form-control" ng-model="entity.qtsentence.question" placeholder="Question">
+    <input type="text" class="form-control" ng-model="entity.qtsentence.answer" placeholder="Answer">
+    <input type="text" class="form-control" ng-model="entity.qtsentence.keyboard"
+           placeholder="KeyBoard rows separeted by ';'"-->
     <br>
 
-    <button type="button" class="btn btn-secondary float-right" ng-click="saveQT(entity)">Save
+    <button type="button" class="btn btn-secondary float-right" ng-click="saveSentence(entity)">Save
     </button>
 </div>
 
 <div ng-if="showSubPage == 'showModify'">
-    <br>
-
-    <select class="form-control" ng-model="currentEntity"
-            ng-options="entity as entity.name for entity in questionTypes">
-    </select>
-    <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
-    <input type="text" class="form-control" ng-model="currentEntity.description" placeholder="Description">
-
-    <br>
-    <button type="button" class="btn btn-success float-right" ng-click="saveQT(currentEntity)">Save</button>
-
+    <p>TODO</p>
 </div>
 
 <div ng-if="showSubPage == 'showList'" style="height: 500px; overflow-y: scroll;">
     <br>
-    <div class="list-group-item" ng-repeat="entity in questionTypes | orderBy: 'name'">
+    <div class="list-group-item" ng-repeat="entity in sentences | orderBy: 'name'">
         <div class="row">
             <div class="col-md-6">{{ entity.name }}</div>
             <div class="col-md-6"><i>{{ entity.description }}</i></div>

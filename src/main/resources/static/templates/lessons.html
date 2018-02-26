@@ -11,11 +11,6 @@
     <br>
     <input type="text" class="form-control" ng-model="newLesson.name" placeholder="Name">
     <input type="text" class="form-control" ng-model="newLesson.description" placeholder="Description">
-
-    <!--input type="text" class="form-control" ng-model="newLesson.question" placeholder="Question">
-    <input type="text" class="form-control" ng-model="newLesson.answer" placeholder="Answer">
-    <input type="text" class="form-control" ng-model="newLesson.keyboard"
-           placeholder="KeyBoard rows separeted by ';'"-->
     <br>
 
     <button type="button" class="btn btn-secondary float-right" ng-click="save(newLesson)">Save
@@ -26,33 +21,36 @@
     <br>
 
     <select class="form-control" ng-model="currentLesson"
-            ng-options="lesson as lesson.name for lesson in lessons">
+            ng-options="lesson as lesson.name for lesson in lessons" ng-change="currentLessonChanged(currentLesson)">
     </select>
     <input type="text" class="form-control" ng-model="currentLesson.name" placeholder="Name">
     <input type="text" class="form-control" ng-model="currentLesson.description" placeholder="Description">
 
     <br>
 
-    <button type="button" class="btn btn-secondary float-right" ng-click="save(currentLesson)">Save</button>
-
-    <br>
-
-
-    <div style="height: 200px; overflow-y: scroll;">
+    <div ng-if="currentLesson" style="height: 300px; overflow-y: scroll;">
         <br>
-        <div class="list-group-item" ng-repeat="entity in questionTypes | orderBy: 'name'">
+        <div class="list-group-item"
+             ng-repeat="entity in allLessonQuestionTypes | orderBy: 'name'" >
             <div class="row">
-                <div class="col-xs-2"><input type="checkbox" ng-click="addQTtoLesson(currentLesson, entity)"/></div>
-                <div class="col-xs-4">{{ entity.name }}</div>
-                <div class="col-xs-6"><i>{{ entity.description }}</i></div>
+                <div class="col-md-1"><input type="checkbox" ng-model="entity.active"/></div>
+                <div class="col-md-5">{{ entity.name }}</div>
+                <div class="col-md-6"><i>{{ entity.description }}</i></div>
             </div>
         </div>
     </div>
+
+    <br>
+    <button type="button" class="btn btn-success float-right" ng-disabled="!currentLesson" ng-click="save(currentLesson)">Save</button>
+
 </div>
 
 <div ng-if="showSubPage == 'showListLesson'" style="height: 500px; overflow-y: scroll;">
     <br>
-    <div class="list-group-item" ng-repeat="lesson in lessons | orderBy: 'name'">
-        {{ lesson.name }} <i>{{ lesson.description }}</i>
+    <div class="list-group-item" ng-repeat="entity in lessons | orderBy: 'name'">
+        <div class="row">
+            <div class="col-md-6">{{ entity.name }}</div>
+            <div class="col-md-6"><i>{{ entity.description }}</i></div>
+        </div>
     </div>
 </div>

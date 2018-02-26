@@ -1,5 +1,7 @@
 package com.patrick.telegram.model;
 
+import org.hibernate.annotations.BatchSize;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Collection;
@@ -20,6 +22,7 @@ public class Lesson implements Serializable {
     @Column(name = "description")
     private String description;
 
+    @BatchSize(size=25)
     @ManyToMany
     @JoinColumn(name = "questionType_id")
     private Collection<QuestionType> questionTypes;
