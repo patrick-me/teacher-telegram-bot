@@ -8,8 +8,8 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             .when("/lessons", {templateUrl: 'templates/lessons.html'})
             .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
             .when("/sentences", {templateUrl: 'templates/sentences.html'})
-            .when("/users", {template: '<p>User\'s content</p>'})
-            .when("/bots", {template: '<p>Bot\'s content</p>'})
+            .when("/users", {template: '<h4>Users</h4>'})
+            .when("/bots", {template: '<h4>Bots</h4>'})
             .otherwise({
                 template: 'This is main'
             });
@@ -33,8 +33,16 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.getSentences = function () {
+            $http.get("/sentences")
+                .then(function (response) {
+                    $scope.sentences = response.data;
+                });
+        };
+
         $scope.getLessons();
         $scope.getQuestionTypes();
+        $scope.getSentences();
 
         $scope.save = function (lesson) {
             //ToDo: validation
@@ -45,7 +53,6 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 }
             }
 
-            console.log(alqt);
             lesson.questionTypes = alqt;
             $http.post("/lessons", lesson)
                 .then(function (response) {

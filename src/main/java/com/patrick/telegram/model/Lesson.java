@@ -11,10 +11,11 @@ import java.util.Collection;
  */
 
 @Entity
-@Table(name = "lesson")
+@Table(name = "Lesson")
 public class Lesson implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "lessonSeq")
     private int id;
 
     @Column(name = "name")
@@ -22,7 +23,7 @@ public class Lesson implements Serializable {
     @Column(name = "description")
     private String description;
 
-    @BatchSize(size=25)
+    @BatchSize(size = 25)
     @ManyToMany
     @JoinColumn(name = "questionType_id")
     private Collection<QuestionType> questionTypes;

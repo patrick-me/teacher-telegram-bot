@@ -1,7 +1,10 @@
 package com.patrick.telegram.model;
 
+import org.hibernate.annotations.BatchSize;
+
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -16,11 +19,21 @@ public class Sentence implements Serializable {
     @Column(name = "name")
     private String name;
 
+    @BatchSize(size = 25)
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "question_id")
+    private Collection<Question> questions;
+
     public Sentence() {
     }
 
     public Sentence(String name) {
         this.name = name;
+    }
+
+    public Sentence(String name, Collection<Question> questions) {
+        this.name = name;
+        this.questions = questions;
     }
 
     public int getId() {
@@ -29,5 +42,9 @@ public class Sentence implements Serializable {
 
     public String getName() {
         return name;
+    }
+
+    public Collection<Question> getQuestions() {
+        return questions;
     }
 }
