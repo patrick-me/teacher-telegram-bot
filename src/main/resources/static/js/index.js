@@ -15,6 +15,19 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             });
     }])
     .controller('bot-controller', function ($scope, $http) {
+        $scope.alphaLengthComparator = function (v1, v2) {
+            // If we don't get strings, just compare by index
+            if (v1.type !== 'string' || v2.type !== 'string') {
+                return (v1.index < v2.index) ? -1 : 1;
+            }
+
+            if (v1.value.length !== v2.value.length) {
+                return (v1.value.length < v2.value.length) ? -1 : 1;
+            }
+
+            // Compare strings alphabetically, taking locale into account
+            return v1.value.localeCompare(v2.value);
+        };
 
         $scope.getLessons = function () {
             $http.get("/lessons")
@@ -68,6 +81,13 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.saveSentence = function (sentence) {
+            $http.post("/sentences", sentence)
+                .then(function (response) {
+                    $scope.getSentences();
+                });
+        };
+
         $scope.currentLesson = {};
         $scope.allLessonQuestionTypes = angular.copy($scope.questionTypes);
 
@@ -91,5 +111,24 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.currentLessonChanged = function (cl) {
             $scope.currentLesson = cl;
             $scope.allLessonQuestionTypes = $scope.getLessonQuestionTypes($scope.currentLesson);
+        };
+
+        $scope.addQuestion = function (sentence, questionType) {
+            var question = {
+                "questionType": angular.copy(questionType),
+                "highlightedSentence": "",
+                "question": "",
+                "keyboard": ""
+            };
+
+            if(!sentence.questions) {
+                sentence.questions = [];
+            }
+            sentence.questions.push(question);
+        };
+
+        $scope.removeQuestion = function(sentence, questionType) {
+            var idx = sentence.questions.indexOf(questionType);
+            sentence.questions.splice(idx, 1);
         };
     });
