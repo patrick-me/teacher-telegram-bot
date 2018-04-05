@@ -14,8 +14,12 @@ import java.util.Collection;
 @Service
 @Transactional
 public class SentenceService {
+    private final SentenceRepository sentenceRepository;
+
     @Autowired
-    SentenceRepository sentenceRepository;
+    public SentenceService(SentenceRepository sentenceRepository) {
+        this.sentenceRepository = sentenceRepository;
+    }
 
     public Collection<Sentence> getSentences() {
         return sentenceRepository.findAll();
@@ -24,7 +28,6 @@ public class SentenceService {
     public Sentence getSentence(int id) {
         return sentenceRepository.findOne(id);
     }
-
 
     public void addSentence(Sentence sentence) {
         sentenceRepository.save(sentence);

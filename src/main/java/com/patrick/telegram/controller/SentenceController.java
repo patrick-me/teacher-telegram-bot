@@ -14,8 +14,12 @@ import java.util.Collection;
 @RequestMapping("/sentences")
 public class SentenceController {
 
+    private final SentenceService sentenceService;
+
     @Autowired
-    SentenceService sentenceService;
+    public SentenceController(SentenceService sentenceService) {
+        this.sentenceService = sentenceService;
+    }
 
     @GetMapping
     public Collection<Sentence> getSentences() {

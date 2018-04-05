@@ -24,16 +24,22 @@
     <br>
     <div style="height: 400px; overflow-y: scroll;">
         <div class="row" ng-repeat="q in entity.questions" style="padding: 30px 16px 0px 16px;">
+
             <h4> {{ q.questionType.name }}</h4>
             <button type="button" class="float-right btn btn-warning btn-sm" ng-click="removeQuestion(entity, q)">
                 Remove
             </button>
+
             <input type="text" class="form-control" ng-model="q.highlightedSentence"
                    placeholder="Type the sentence with UPPERCASE word">
             <input type="text" class="form-control" ng-model="q.question"
                    placeholder="Type correct question for validation">
-            <input type="text" class="form-control" ng-model="q.keyboard"
-                   placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
+            <div class="input-group">
+                <input type="text" class="form-control" ng-model="q.keyboard"
+                       placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
+
+                <button class="float-right btn btn-info">Shuffle</button>
+            </div>
         </div>
     </div>
     <br>
@@ -65,16 +71,25 @@
         <br>
         <div style="height: 400px; overflow-y: scroll;">
             <div class="row" ng-repeat="q in currentEntity.questions" style="padding: 30px 16px 0px 16px;">
+
                 <h4> {{ q.questionType.name }}</h4>
-                <button type="button" class="float-right btn btn-warning btn-sm" ng-click="removeQuestion(currentEntity, q)">
+
+                <button type="button" class="float-right btn btn-warning btn-sm"
+                        ng-click="removeQuestion(currentEntity, q)">
                     Remove
                 </button>
+
                 <input type="text" class="form-control" ng-model="q.highlightedSentence"
                        placeholder="Type the sentence with UPPERCASE word">
                 <input type="text" class="form-control" ng-model="q.question"
                        placeholder="Type correct question for validation">
-                <input type="text" class="form-control" ng-model="q.keyboard"
-                       placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
+
+                <div class="input-group">
+                    <input type="text" class="form-control" ng-model="q.keyboard"
+                           placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
+
+                    <button class="float-right btn btn-info" ng-click="q.keyboard = shuffleKeyBoard(q.keyboard)">Shuffle</button>
+                </div>
             </div>
         </div>
         <br>

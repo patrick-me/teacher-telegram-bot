@@ -8,10 +8,10 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             .when("/lessons", {templateUrl: 'templates/lessons.html'})
             .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
             .when("/sentences", {templateUrl: 'templates/sentences.html'})
-            .when("/users", {template: '<h4>Users</h4>'})
-            .when("/bots", {template: '<h4>Bots</h4>'})
+            .when("/users", {templateUrl: 'templates/users.html'})
+            .when("/bots", {templateUrl: 'templates/bots.html'})
             .otherwise({
-                template: 'This is main'
+                template: '<h4>This is main</h4>'
             });
     }])
     .controller('bot-controller', function ($scope, $http) {
@@ -53,9 +53,25 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.getBots = function () {
+            $http.get("/bots")
+                .then(function (response) {
+                    $scope.bots = response.data;
+                });
+        };
+
+        $scope.getUsers = function () {
+            $http.get("/users")
+                .then(function (response) {
+                    $scope.users = response.data;
+                });
+        };
+
         $scope.getLessons();
         $scope.getQuestionTypes();
         $scope.getSentences();
+        $scope.getBots();
+        $scope.getUsers();
 
         $scope.save = function (lesson) {
             //ToDo: validation
@@ -88,6 +104,13 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.saveBot = function (bot) {
+            $http.post("/bots", bot)
+                .then(function (response) {
+                    $scope.getBots();
+                });
+        };
+
         $scope.currentLesson = {};
         $scope.allLessonQuestionTypes = angular.copy($scope.questionTypes);
 
@@ -113,6 +136,57 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             $scope.allLessonQuestionTypes = $scope.getLessonQuestionTypes($scope.currentLesson);
         };
 
+        $scope.getUserLessons = function (user) {
+            if (user === undefined || user === null) {
+                console.log("User is undefined");
+                return [];
+            }
+
+            $scope.getLessons();
+            $scope.getUserLessonsById(user.id);
+        };
+
+        $scope.getUserLessonsById = function (id) {
+            $scope.userLessons = undefined;
+
+            $http.get("/lessons/user/" + id)
+                .then(function (response) {
+                    $scope.userLessons = response.data;
+
+                    var lessons = angular.copy($scope.lessons);
+                    var userLessons = angular.copy($scope.userLessons);
+
+                    var hash = {};
+                    angular.forEach(userLessons, function (value) {
+                        hash[value.id] = value;
+                    });
+
+                    angular.forEach(lessons, function (value) {
+                        value.active = hash[value.id] !== undefined;
+                    });
+                    $scope.allUserLessons = lessons;
+                });
+        };
+
+        $scope.currentUserChanged = function (user) {
+            $scope.currentUser = user;
+            $scope.getUserLessons($scope.currentUser);
+        };
+
+        $scope.saveUserLessons = function (userId, userLessons) {
+            var ul = angular.copy(userLessons);
+            for (var i = ul.length - 1; i >= 0; i--) {
+                if (!ul[i].active) {
+                    ul.splice(i, 1);
+                }
+            }
+
+            $http.post("/lessons/user/" + userId, ul)
+                .then(function (response) {
+                    $scope.getUsers();
+                });
+        };
+
         $scope.addQuestion = function (sentence, questionType) {
             var question = {
                 "questionType": angular.copy(questionType),
@@ -121,14 +195,39 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 "keyboard": ""
             };
 
-            if(!sentence.questions) {
+            if (!sentence.questions) {
                 sentence.questions = [];
             }
             sentence.questions.push(question);
         };
 
-        $scope.removeQuestion = function(sentence, questionType) {
+        $scope.removeQuestion = function (sentence, questionType) {
             var idx = sentence.questions.indexOf(questionType);
             sentence.questions.splice(idx, 1);
         };
+
+        $scope.shuffleKeyBoard = function (keyboard) {
+            var array = keyboard.split(' ; ');
+            array = shuffle(array);
+            keyboard = array.join(' ; ');
+            return keyboard;
+        };
+
+        function shuffle(array) {
+            var m = array.length, t, i;
+
+            // While there remain elements to shuffle…
+            while (m) {
+
+                // Pick a remaining element…
+                i = Math.floor(Math.random() * m--);
+
+                // And swap it with the current element.
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
+            }
+
+            return array;
+        }
     });

@@ -15,7 +15,6 @@ import java.util.Collection;
 public class Lesson implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @SequenceGenerator(name = "lessonSeq")
     private int id;
 
     @Column(name = "name")

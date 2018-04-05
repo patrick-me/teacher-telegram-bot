@@ -1,44 +1,48 @@
 package com.patrick.telegram;
 
+import com.patrick.telegram.config.SpringContext;
+import com.patrick.telegram.model.Bot;
+import com.patrick.telegram.service.RouteService;
+import org.springframework.context.ApplicationContext;
 import org.telegram.telegrambots.api.methods.BotApiMethod;
-import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
-import org.telegram.telegrambots.api.objects.MessageEntity;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-import java.util.List;
-
 /**
  * Created by Patrick on 07.02.2018.
  */
+
 public class TelegramBot extends TelegramLongPollingBot {
+
+    private final String BOT_NAME;
+    private final String TOKEN;
+    private final int ID;
+
+    private RouteService routeService;
+
+    public TelegramBot(Bot bot) {
+        super();
+        BOT_NAME = bot.getName();
+        TOKEN = bot.getToken();
+        ID = bot.getId();
+    }
+
+    private RouteService getRouteService() {
+        if (routeService == null) {
+            ApplicationContext ac = SpringContext.getApplicationContext();
+            routeService = ac.getBean(RouteService.class);
+        }
+        return routeService;
+    }
 
     @Override
     public void onUpdateReceived(Update update) {
-
-        if (update.hasMessage() && update.getMessage().hasEntities()) {
-            processCommands(update.getMessage().getEntities(), update.getMessage().getChatId());
-        }
+        getRouteService().route(ID, update);
     }
 
-    private void processCommands(List<MessageEntity> entities, Long chatId) {
-        for (MessageEntity e : entities) {
-            processCommand(e, chatId);
-        }
-    }
-
-    private void processCommand(MessageEntity entity, Long chatId) {
-        switch (entity.getText()) {
-            case "/start":
-                send(new SendMessage()
-                        .setChatId(chatId)
-                        .setText("Start command handled"));
-        }
-    }
-
-    private <T extends BotApiMethod<Message>> void send(T message) {
+    public <T extends BotApiMethod<Message>> void send(T message) {
         try {
             execute(message);
         } catch (TelegramApiException e) {
@@ -55,7 +59,4 @@ public class TelegramBot extends TelegramLongPollingBot {
     public String getBotToken() {
         return TOKEN;
     }
-
-    private static final String BOT_NAME = "Lesson Bot";
-    private static final String TOKEN = "";
 }

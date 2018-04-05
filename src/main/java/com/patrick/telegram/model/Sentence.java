@@ -21,7 +21,7 @@ public class Sentence implements Serializable {
 
     @BatchSize(size = 25)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "question_id")
+    @JoinColumn(name = "sentence_id")
     private Collection<Question> questions;
 
     public Sentence() {
