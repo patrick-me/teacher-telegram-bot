@@ -20,7 +20,7 @@ public class Sentence implements Serializable {
     private String name;
 
     @BatchSize(size = 25)
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "sentence_id")
     private Collection<Question> questions;
 

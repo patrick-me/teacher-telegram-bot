@@ -45,10 +45,16 @@ public class User implements Serializable {
     @JoinColumn(name = "lesson_id")
     private Collection<Lesson> lessons = new ArrayList<>();
 
+    @BatchSize(size = 25)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    //@JoinTable(name = "(select * from " + Message.TABLE_NAME + " order by date desc limit 1000)")
+    private Collection<Message> messages = new ArrayList<>();
+
     public User() {
     }
 
-    public User(org.telegram.telegrambots.api.objects.User user) {
+    public User(org.telegram.telegrambots.meta.api.objects.User user) {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.nickName = user.getUserName();
@@ -89,6 +95,22 @@ public class User implements Serializable {
 
     public void setLessons(Collection<Lesson> lessons) {
         this.lessons = lessons;
+    }
+
+    public Collection<Message> getMessages() {
+        return messages;
+    }
+
+    public void addMessage(String message) {
+        messages.add(new Message(message));
+    }
+
+
+    public String getLastMessage() {
+        if (messages.isEmpty()) {
+            return null;
+        }
+        return new ArrayList<>(messages).get(messages.size() - 1).getName();
     }
 
     @Override

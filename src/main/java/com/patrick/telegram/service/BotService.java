@@ -5,13 +5,17 @@ import com.patrick.telegram.model.Bot;
 import com.patrick.telegram.repository.BotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.api.methods.BotApiMethod;
-import org.telegram.telegrambots.api.objects.Message;
-import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
-import org.telegram.telegrambots.generics.BotSession;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.meta.ApiContext;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.generics.BotSession;
 
 import javax.transaction.Transactional;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Transactional
 public class BotService {
 
+    //TODO make a config
+    private static String PROXY_HOST = "u0k12.tgproxy.me" /* proxy host */;
+    private static Integer PROXY_PORT = 1080 /* proxy port */;
+    private static String PROXY_USER = "telegram" /* proxy user */;
+    private static String PROXY_PASSWORD = "telegram" /* proxy password */;
+
     @Autowired
     private BotRepository botRepository;
 
@@ -33,7 +43,8 @@ public class BotService {
 
     private void register(Bot bot) {
         try {
-            TelegramBot telegramBot = new TelegramBot(bot);
+            TelegramBot telegramBot = new TelegramBot(bot, getProxyBotOptions());
+            System.out.println(telegramBot);
             BotSession botSession = telegramBotsApi.registerBot(telegramBot);
             sessions.put(bot.getId(), botSession);
             telegramBotMap.put(bot.getId(), telegramBot);
@@ -42,6 +53,31 @@ public class BotService {
             bot.setStatus(Bot.Status.DISCONNECTED);
             System.out.println(e.getMessage());
         }
+    }
+//TODO Refactor this
+    private DefaultBotOptions getProxyBotOptions() {
+        // Create the Authenticator that will return auth's parameters for proxy authentication
+       /* System.setProperty("java.net.useSystemProxies", "true");
+        System.setProperty("http.proxyHost", "http://u0k12.tgproxy.me");
+        System.setProperty("http.proxyPort", "1080");
+        System.setProperty("http.proxyUser", "telegram");
+        System.setProperty("http.proxyPassword", "telegram");
+        System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");*/
+        //u0k12.tgproxy.me&port=1080&user=telegram&pass=telegram
+
+        Authenticator.setDefault(new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(PROXY_USER, PROXY_PASSWORD.toCharArray());
+            }
+        });
+
+        DefaultBotOptions botOptions = ApiContext.getInstance(DefaultBotOptions.class);
+        botOptions.setProxyHost(PROXY_HOST);
+        botOptions.setProxyPort(PROXY_PORT);
+        botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
+
+        return botOptions;
     }
 
     public <T extends BotApiMethod<Message>> void send(int id, T message) {

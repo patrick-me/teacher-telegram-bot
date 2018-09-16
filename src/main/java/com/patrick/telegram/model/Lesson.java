@@ -23,7 +23,7 @@ public class Lesson implements Serializable {
     private String description;
 
     @BatchSize(size = 25)
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "questionType_id")
     private Collection<QuestionType> questionTypes;
 
