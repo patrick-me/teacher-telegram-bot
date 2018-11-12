@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -43,6 +44,14 @@ public class LessonService {
             user.getLessons().size();
             return user.getLessons();
         }
+    }
+
+    public Optional<Lesson> getLesson(int id) {
+        return Optional.ofNullable(lessonRepository.findOne(id));
+    }
+
+    public Optional<Lesson> getUserLessonByName(int userId, String name) {
+        return getUserLessons(userId).stream().filter(l -> l.getName().equals(name)).findFirst();
     }
 
     public void saveUserLessons(int id, Collection<Lesson> lessons) {

@@ -1,17 +1,26 @@
 package com.patrick.telegram.service;
 
 import com.patrick.telegram.model.Lesson;
+import com.patrick.telegram.model.Question;
+import com.patrick.telegram.model.QuestionType;
+import com.patrick.telegram.model.UserSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.MessageEntity;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -19,19 +28,29 @@ import java.util.stream.Collectors;
  */
 @Service
 public class RouteService {
+    private static final String NEXT_QUESTION = "Следующий вопрос";
+    private static final String FINISH_LESSON = "Завершить урок";
+    public static final String CHECK_QUESTION = "Проверить вопрос";
+
+    private static final String START_CMD = "Начать";
+    private static final String LESSONS_CMD = "Уроки";
+    private static final String SECRET_CMD = "/secret";
+
 
     private final BotService botService;
     private final UserService userService;
     private final LessonService lessonService;
     private final QuestionService questionService;
+    private final UserSessionService userSessionService;
 
     @Autowired
     public RouteService(BotService botService, UserService userService, LessonService lessonService,
-                        QuestionService questionService) {
+                        QuestionService questionService, UserSessionService userSessionService) {
         this.botService = botService;
         this.userService = userService;
         this.lessonService = lessonService;
         this.questionService = questionService;
+        this.userSessionService = userSessionService;
     }
 
 
@@ -69,42 +88,61 @@ public class RouteService {
         System.out.println("last: " + user.getLastMessage());
         System.out.println("new: " + newMessage);
 
-        if ("/lessons".equals(user.getLastMessage())) {
-            processChosenLesson(user, chatId, botId, newMessage);
+        UserSession userSession = userSessionService.getSession(user.getId());
+
+        if (userSession != null) {
+            switch (newMessage) {
+                case FINISH_LESSON:
+                    userSession.finishSession();
+                    sendMessage(botId, chatId,
+                            "Here, you could see lessons which Panda-trainer assigned to you",
+                            getLessonKeyBoard(user.getId())
+                    );
+                    break;
+                case NEXT_QUESTION:
+                    userSession.finishSession();
+                    processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()));
+                    break;
+                case CHECK_QUESTION:
+                    String checkMessage = (userSession.isCorrect()) ? "*Correct!*" : "*Fail!*" +
+                            "\nCorrect question: " + userSession.getCorrectQuestion() +
+                            "\nYour question: " + userSession.getUserQuestion();
+                    sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
+                    sendPanda(botId, chatId, userSession.isCorrect() ? "panda1.jpg" : "panda2.jpg");
+                    //TODO define commands and pictures
+                    break;
+                default:
+                    userSession.process(newMessage);
+                    sendMessage(
+                            botId, chatId, userSession.getUserQuestion(), userSession.getUserKeyBoardButtons(),
+                            getCheckKeyBoard()
+                    );
+            }
+            userSessionService.save(userSession);
+
+        } else if (Arrays.asList(FINISH_LESSON, LESSONS_CMD).contains(user.getLastMessage())) {
+            processChosenLesson(user, chatId, botId, lessonService.getUserLessonByName(user.getId(), newMessage));
         } else {
 
             switch (newMessage) {
-                case "/start":
-                    SendMessage message = new SendMessage()
-                            .setChatId(chatId)
-                            .setText("Start _command_ handled")
-                            .enableMarkdown(true);
-                    setKeyBoard(message);
-                    botService.send(botId, message);
+                case START_CMD:
+                    sendMessage(botId, chatId, "Welcome to Panda's Question bot", getStartKeyBoard());
+                    sendPanda(botId, chatId, "panda0.jpg");
                     break;
-                case "/lessons":
-                    SendMessage lessonMessage = new SendMessage()
-                            .setChatId(chatId)
-                            .setText("Lesson _command_ handled")
-                            .enableMarkdown(true);
-                    setLessonKeyBoard(lessonMessage, user.getId());
-                    botService.send(botId, lessonMessage);
+                case LESSONS_CMD:
+                    sendMessage(botId, chatId,
+                            "Here, you could see lessons which Panda-trainer assigned to you",
+                            getLessonKeyBoard(user.getId())
+                    );
                     break;
-                case "/test1":
-                    SendMessage mes = new SendMessage()
-                            .setChatId(chatId)
-                            .setText(new String(Character.toChars(128515)) + "\u27a1" + "\u27a2" + "\u27a3" + "\u27a4" + "\u27a5" + "\u27a6" + "\u27a7" + " His younger *BROTHER* is in love with her older sister. → ")
-                            .enableMarkdown(true);
-                    botService.send(botId, mes);
+                case SECRET_CMD:
+                    sendMessage(botId, chatId,
+                            "It's a secret: " +
+                                    new String(Character.toChars(128515)) + "\u27a1" + "\u27a2" + "\u27a3" + "\u27a4" + "\u27a5" + "\u27a6" + "\u27a7" + " His younger *BROTHER* is in love with her older sister. → "
+                    );
                     break;
-
                 default:
-                    SendMessage defaultMessage = new SendMessage()
-                            .setChatId(chatId)
-                            .setText("Start _*" + newMessage + "*_ handled")
-                            .enableMarkdown(true);
-                    botService.send(botId, defaultMessage);
-                    break;
+                    sendMessage(botId, chatId, "Welcome to Panda's Question bot", getStartKeyBoard());
             }
         }
 
@@ -112,53 +150,99 @@ public class RouteService {
         userService.saveUser(user);
     }
 
-    private void processChosenLesson(com.patrick.telegram.model.User user, Long chatId, int botId, String newMessage) {
-        Collection<Lesson> lessons = lessonService.getUserLessons(user.getId());
-        Optional<Lesson> oLesson = lessons.stream().filter(l -> l.getName().equals(newMessage)).findFirst();
+    private void processChosenLesson(com.patrick.telegram.model.User user, Long chatId, int botId, Optional<Lesson> oLesson) {
         if (!oLesson.isPresent()) {
             return;
         }
 
-        SendMessage message = new SendMessage()
-                .setChatId(chatId)
-                .setText(
-                        oLesson.get().getDescription()
-                )
-                .enableMarkdown(true);
+        Lesson lesson = oLesson.get();
+        UserSession userSession = new UserSession(user, getRandomQuestion(lesson), lesson);
+        userSessionService.save(userSession);
 
-        botService.send(botId, message);
-
-        oLesson.get().getQuestionTypes().stream().findFirst().ifPresent(q ->
-                questionService.getQuestions().stream()
-                        .filter(qs -> qs.getQuestionType().getId() == q.getId()).findFirst().ifPresent(
-                        qqs -> {
-                            SendMessage message2 = new SendMessage()
-                                    .setChatId(chatId)
-                                    .enableMarkdown(true)
-                                    .setText(System.lineSeparator() +
-                                            qqs.getHighlightedSentence())
-                                    .setReplyMarkup(getKeyBoard(Arrays.asList(qqs.getKeyboard().split(" ; "))));
-
-                            botService.send(botId, message2);
-                        })
-        );
+        sendMessage(botId, chatId, lesson.getDescription());
+        sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(),
+                userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
     }
 
-    private ReplyKeyboard getKeyBoard(List<String> keyboardElements) {
+    private void sendMessage(int botId, long chatId, String text) {
+        sendMessage(botId, chatId, text, Collections.emptyList());
+    }
+
+    private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons) {
+        sendMessage(botId, chatId, text, keyBoardButtons, Collections.emptyList());
+    }
+
+    private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
+                             List<String> keyBoardControlButtons) {
+        SendMessage message = new SendMessage()
+                .setChatId(chatId)
+                .setText(text)
+                .enableMarkdown(true);
+
+        ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons);
+
+        if (!keyBoardButtons.isEmpty() || !keyBoardControlButtons.isEmpty()) {
+            message.setReplyMarkup(replyKeyboard);
+        }
+        botService.send(botId, message);
+    }
+
+    private void sendPanda(int botId, long chatId, String pandaFile) {
+
+        try {
+
+            InputStream initialStream = new FileInputStream(
+                    new File("src/main/resources/" + pandaFile));
+            SendPhoto message = new SendPhoto()
+                    .setChatId(chatId)
+                    .setPhoto(pandaFile, initialStream);
+            botService.send(botId, message);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private Question getRandomQuestion(Lesson lesson) {
+        int index = ThreadLocalRandom.current().nextInt(lesson.getQuestionTypes().size());
+        QuestionType questionType = new ArrayList<>(lesson.getQuestionTypes()).get(index);
+
+        List<Question> questions = questionService.getQuestions().stream()
+                .filter(qs -> qs.getQuestionType().getId() == questionType.getId())
+                .collect(Collectors.toList());
+
+        if (questions.isEmpty()) {
+            return getRandomQuestion(lesson);
+        }
+
+        index = ThreadLocalRandom.current().nextInt(questions.size());
+        return questions.get(index);
+    }
+
+    private ReplyKeyboardMarkup getKeyBoard(List<String> keyboardElements, List<String> keyboardControlElements) {
         // Create ReplyKeyboardMarkup object
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         keyboardMarkup.setResizeKeyboard(true);
         // Create the keyboard (list of keyboard rows)
         List<KeyboardRow> keyboard = new ArrayList<>();
         // Create a keyboard row
+        addRowsToKeyBoard(keyboard, keyboardElements, 3);
+        addRowsToKeyBoard(keyboard, keyboardControlElements, 3);
 
-        int count = 3;
+        // Set the keyboard to the markup
+        keyboardMarkup.setKeyboard(keyboard);
+        return keyboardMarkup;
+    }
+
+    private void addRowsToKeyBoard(List<KeyboardRow> keyboard, List<String> elements,
+                                   int numberOfElementsPerRow) {
+        int count = numberOfElementsPerRow;
         KeyboardRow row = new KeyboardRow();
-        for (String element : keyboardElements) {
+        for (String element : elements) {
             if (count-- < 1) {
                 keyboard.add(row);
                 row = new KeyboardRow();
-                count = 2;
+                count = numberOfElementsPerRow - 1;
             }
             row.add(element);
         }
@@ -166,27 +250,23 @@ public class RouteService {
         if (!row.isEmpty()) {
             keyboard.add(row);
         }
-
-        // Set the keyboard to the markup
-        keyboardMarkup.setKeyboard(keyboard);
-        return keyboardMarkup;
     }
 
-
-    private void setKeyBoard(SendMessage sendMessage) {
-        sendMessage.setReplyMarkup(
-                getKeyBoard(
-                        Arrays.asList("/start", "/lessons", "/bot",
-                                "/test1", "/test2", "/test3")
-                )
-        );
+    private List<String> getLessonKeyBoard(int userId) {
+        return lessonService.getUserLessons(userId).stream()
+                .map(Lesson::getName)
+                .collect(Collectors.toList());
     }
 
-    private void setLessonKeyBoard(SendMessage sendMessage, int userId) {
-        sendMessage.setReplyMarkup(
-                getKeyBoard(lessonService.getUserLessons(userId).stream()
-                        .map(Lesson::getName)
-                        .collect(Collectors.toList()))
-        );
+    private List<String> getCheckKeyBoard() {
+        return Arrays.asList(CHECK_QUESTION, FINISH_LESSON);
+    }
+
+    private List<String> getFinishKeyBoard() {
+        return Arrays.asList(NEXT_QUESTION, FINISH_LESSON);
+    }
+
+    private List<String> getStartKeyBoard() {
+        return Arrays.asList(START_CMD, LESSONS_CMD);
     }
 }

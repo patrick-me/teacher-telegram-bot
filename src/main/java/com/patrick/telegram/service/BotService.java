@@ -9,6 +9,8 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.BotSession;
@@ -81,6 +83,13 @@ public class BotService {
     }
 
     public <T extends BotApiMethod<Message>> void send(int id, T message) {
+        TelegramBot tb = telegramBotMap.get(id);
+        if (tb != null) {
+            tb.send(message);
+        }
+    }
+
+    public void send(int id, SendPhoto message) {
         TelegramBot tb = telegramBotMap.get(id);
         if (tb != null) {
             tb.send(message);

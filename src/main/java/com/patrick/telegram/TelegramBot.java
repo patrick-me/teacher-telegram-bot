@@ -7,6 +7,8 @@ import org.springframework.context.ApplicationContext;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -51,6 +53,14 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public <T extends BotApiMethod<Message>> void send(T message) {
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void send(SendPhoto message) {
         try {
             execute(message);
         } catch (TelegramApiException e) {
