@@ -1,0 +1,24 @@
+<div ng-if="pandaAlert" class="alert alert-warning" role="alert">
+    {{ pandaAlert }}
+</div>
+
+<h4 ng-init="$root.currentPandaTemplate = 'templates/pandas/list_pandas.html'" style="padding: 16px 0px 16px 0px">
+    Панды</h4>
+
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentPandaTemplate = 'templates/pandas/list_pandas.html'">Список панд
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentPandaTemplate = 'templates/pandas/add_panda.html'">Добавить панду
+    </button>
+    <!--button type="button" class="btn btn-secondary"
+            ng-click="$root.currentPandaTemplate = 'templates/pandas/modify_panda.html'">Изменить панду
+    </button-->
+</div>
+
+<br>
+
+<div id="panda_content">
+    <div ng-include="$root.currentPandaTemplate"></div>
+</div>

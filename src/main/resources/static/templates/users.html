@@ -1,0 +1,53 @@
+<h4 ng-init="showSubPage = 'showList'">Users</h4>
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showList'">Show List</button>
+    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showModify'">Modify</button>
+</div>
+
+<br>
+
+<div ng-if="showSubPage == 'showModify'">
+    <br>
+
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.lastName + ' ' + entity.firstName for entity in users"
+            ng-change="currentUserChanged(currentEntity)">
+    </select>
+    <br>
+    <hr>
+    <div class="row">
+        <div class="col-md-2"><i>{{ entity.nickName }}</i></div>
+        <div class="col-md-4">{{ entity.firstName + ' ' + entity.lastName}}</div>
+    </div>
+
+    <div ng-if="currentEntity" style="height: 300px; overflow-y: scroll;">
+        <br>
+        <div class="list-group-item"
+             ng-repeat="entity in allUserLessons | orderBy: 'name' : false : alphaLengthComparator">
+            <div class="row">
+                <div class="col-md-1"><input type="checkbox" ng-model="entity.active"/></div>
+                <div class="col-md-5">{{ entity.name }}</div>
+                <div class="col-md-6"><i>{{ entity.description }}</i></div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <button type="button" class="btn btn-success float-right" ng-disabled="!currentEntity"
+            ng-click="saveUserLessons(currentEntity.id, allUserLessons)">Save
+    </button>
+
+</div>
+
+<div ng-if="showSubPage == 'showList'" style="height: 500px; overflow-y: scroll;">
+    <br>
+    <div class="list-group-item" ng-repeat="entity in users | orderBy: 'lastName' | orderBy: 'firstName'">
+        <div class="row">
+            <div class="col-md-1"><i>{{ entity.id }}</i></div>
+            <div class="col-md-2"><i>{{ entity.telegramId }}</i></div>
+            <div class="col-md-2"><i>{{ entity.nickName }}</i></div>
+            <div class="col-md-3">{{ entity.firstName + ' ' + entity.lastName}}</div>
+            <div class="col-md-4">{{ entity.lastLogin | date:'medium' }}</div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+<h4 ng-init="showSubPage = 'showList'">Question's types</h4>
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showList'">Show List</button>
+    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showNew'">Add New</button>
+    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showModify'">Modify</button>
+</div>
+
+<br>
+
+<div ng-if="showSubPage == 'showNew'">
+    <br>
+    <input type="text" class="form-control" ng-model="entity.name" placeholder="Name">
+    <input type="text" class="form-control" ng-model="entity.description" placeholder="Description">
+    <br>
+
+    <button type="button" class="btn btn-secondary float-right" ng-click="saveQT(entity)">Save
+    </button>
+</div>
+
+<div ng-if="showSubPage == 'showModify'">
+    <br>
+
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.name for entity in questionTypes">
+    </select>
+    <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
+    <input type="text" class="form-control" ng-model="currentEntity.description" placeholder="Description">
+
+    <br>
+    <button type="button" class="btn btn-success float-right" ng-click="saveQT(currentEntity)">Save</button>
+
+</div>
+
+<div ng-if="showSubPage == 'showList'" style="height: 500px; overflow-y: scroll;">
+    <br>
+    <div class="list-group-item" ng-repeat="entity in questionTypes | orderBy: 'name'">
+        <div class="row">
+            <div class="col-md-6">{{ entity.name }}</div>
+            <div class="col-md-6"><i>{{ entity.description }}</i></div>
+        </div>
+    </div>
+</div>

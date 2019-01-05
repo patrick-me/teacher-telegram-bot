@@ -1,15 +1,51 @@
 <!DOCTYPE HTML>
-<html>
+<html ng-app="bot-app">
 <head>
     <title>Welcome</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <script src="/webjars/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/webjars/bootstrap/4.0.0/css/bootstrap.min.css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script src="/webjars/jquery/3.3.1/jquery.min.js"></script>
+    <script src="/webjars/angularjs/1.7.5/angular.min.js"></script>
+    <script src="/webjars/angularjs/1.7.5/angular-route.min.js"></script>
+    <script src="/webjars/angular-filter/0.4.9/angular-filter.min.js"></script>
+    <script src="/webjars/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
+
+    <link rel="stylesheet" href="/webjars/bootstrap/4.1.3/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/webjars/bootstrap-glyphicons/bdd2cbfba0/css/bootstrap-glyphicons.css"/>
+
+    <script src="/js/index.js" type="text/javascript"></script>
+
+    <!-- Yandex.Metrika counter -->
+    <script src="/js/ya.metrics.js" type="text/javascript"></script>
+    <noscript>
+        <div>
+            <!--img src="" style="position:absolute; left:-9999px;" alt=""/-->
+        </div>
+    </noscript>
+    <!-- /Yandex.Metrika counter -->
+
 </head>
-<body class="container">
+<body class="container-fluid" ng-controller="bot-controller" ng-cloak>
 <div class="page-header">
-    <h1>Example Page Header</h1>
+    <br>
+    <h1 style="text-align: center">Teacher's page</h1>
+    <br>
 </div>
-<p>Get your lessons <a href="/lessons">here</a></p>
+<div class="row" style="height: 800px; background-color: lightgrey">
+    <div id="menu" class="col-xl-3" style="border: 1px solid">
+        <ul class="list-group">
+            <li class="list-group-item"><a href="#!/lessons">Lessons</a></li>
+            <li class="list-group-item"><a href="#!/questionTypes">Question Types</a></li>
+            <li class="list-group-item"><a href="#!/sentences">Sentences</a></li>
+            <li class="list-group-item"><a href="#!/users">Users</a></li>
+            <li class="list-group-item"><a href="#!/bots">Bots</a></li>
+            <li class="list-group-item"><a href="#!/pandas">Pandas</a></li>
+        </ul>
+    </div>
+
+    <div id="content" class="col-xl-9" style="border: 1px solid">
+        <div ng-view></div>
+    </div>
+</div>
+
 </body>
 </html>

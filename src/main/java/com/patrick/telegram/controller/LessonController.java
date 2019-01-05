@@ -1,14 +1,11 @@
 package com.patrick.telegram.controller;
 
-import com.patrick.telegram.model.QuestionLesson;
+import com.patrick.telegram.model.Lesson;
 import com.patrick.telegram.service.LessonService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Created by Patrick on 25.01.2018.
@@ -17,14 +14,30 @@ import java.util.List;
 @RequestMapping("/lessons")
 public class LessonController {
 
+    private final LessonService lessonService;
+
     @Autowired
-    LessonService lessonService;
+    public LessonController(LessonService lessonService) {
+        this.lessonService = lessonService;
+    }
 
     @GetMapping
-    public List<QuestionLesson> getLessons() {
-        return Arrays.asList(
-                lessonService.getSomeQuestionLesson(),
-                lessonService.getSomeQuestionLesson()
-        );
+    public Collection<Lesson> getLessons() {
+        return lessonService.getLessons();
+    }
+
+    @PostMapping
+    public void addLesson(@RequestBody Lesson lesson) {
+        lessonService.addLesson(lesson);
+    }
+
+    @GetMapping("/user/{id}")
+    public Collection<Lesson> getUserLessons(@PathVariable int id) {
+        return lessonService.getUserLessons(id);
+    }
+
+    @PostMapping("/user/{id}")
+    public void saveUserLessons(@PathVariable int id, @RequestBody Collection<Lesson> lessons) {
+        lessonService.saveUserLessons(id, lessons);
     }
 }
