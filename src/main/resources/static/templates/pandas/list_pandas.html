@@ -1,0 +1,25 @@
+<br>
+
+<div class="form-group mb-2">
+    <label for="message" class="sr-only">Message</label>
+    <input type="text" readonly class="form-control-plaintext" id="message"
+           value="Введите число, с какой частотой успешных / неуспешных ответов подряд, будут отправляться панды"/>
+    <form class="form-inline">
+        <div class="form-group mx-sm-2 mb-2">
+            <input type="text" class="form-control" id="number" ng-model="pandaSendNumber.value" placeholder="Число">
+        </div>
+        <button ng-click="saveConfig(pandaSendNumber)" class="btn btn-primary mb-2">Сохранить</button>
+    </form>
+</div>
+
+<div style="height: 400px; overflow-y: scroll;">
+    <div class="list-group-item" ng-repeat="entity in pandas | orderBy: 'name'">
+        <div class="row">
+            <div class="col-md-4"><img src="{{ entity.imageBase64 }}" height="200px" width="200px"
+                                       alt="{{ entity.name }}"/></div>
+            <div class="col-md-4">Название: {{ entity.name }}</div>
+            <div class="col-md-4"><label> Отправляется при <b>{{ entity.positive ? "правильном" : "неправильном" }}</b>
+                ответе</label></div>
+        </div>
+    </div>
+</div>

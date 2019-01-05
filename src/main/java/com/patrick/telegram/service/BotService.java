@@ -3,14 +3,16 @@ package com.patrick.telegram.service;
 import com.patrick.telegram.TelegramBot;
 import com.patrick.telegram.model.Bot;
 import com.patrick.telegram.repository.BotRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.BotSession;
@@ -30,11 +32,19 @@ import java.util.concurrent.ConcurrentHashMap;
 @Transactional
 public class BotService {
 
-    //TODO make a config
-    private static String PROXY_HOST = "u0k12.tgproxy.me" /* proxy host */;
-    private static Integer PROXY_PORT = 1080 /* proxy port */;
-    private static String PROXY_USER = "telegram" /* proxy user */;
-    private static String PROXY_PASSWORD = "telegram" /* proxy password */;
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Value("${proxy.host}")
+    private String proxyHost;
+    @Value("${proxy.port}")
+    private Integer proxyPort;
+    @Value("${proxy.user}")
+    private String proxyUser;
+    @Value("${proxy.password}")
+    private String proxyPassword;
+    @Value("${proxy.enabled}")
+    private boolean isProxyEnabled;
+
 
     @Autowired
     private BotRepository botRepository;
@@ -45,39 +55,36 @@ public class BotService {
 
     private void register(Bot bot) {
         try {
+            log.info("Bot registration - {}", bot.getName());
             TelegramBot telegramBot = new TelegramBot(bot, getProxyBotOptions());
-            System.out.println(telegramBot);
+            log.info("telegramBot: {}", telegramBot);
+
             BotSession botSession = telegramBotsApi.registerBot(telegramBot);
             sessions.put(bot.getId(), botSession);
             telegramBotMap.put(bot.getId(), telegramBot);
             bot.setStatus(Bot.Status.CONNECTED);
         } catch (TelegramApiRequestException e) {
             bot.setStatus(Bot.Status.DISCONNECTED);
-            System.out.println(e.getMessage());
+            log.info("error: {}", e.getMessage());
         }
     }
-//TODO Refactor this
-    private DefaultBotOptions getProxyBotOptions() {
-        // Create the Authenticator that will return auth's parameters for proxy authentication
-       /* System.setProperty("java.net.useSystemProxies", "true");
-        System.setProperty("http.proxyHost", "http://u0k12.tgproxy.me");
-        System.setProperty("http.proxyPort", "1080");
-        System.setProperty("http.proxyUser", "telegram");
-        System.setProperty("http.proxyPassword", "telegram");
-        System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");*/
-        //u0k12.tgproxy.me&port=1080&user=telegram&pass=telegram
 
-        Authenticator.setDefault(new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(PROXY_USER, PROXY_PASSWORD.toCharArray());
-            }
-        });
+    private DefaultBotOptions getProxyBotOptions() {
 
         DefaultBotOptions botOptions = ApiContext.getInstance(DefaultBotOptions.class);
-        botOptions.setProxyHost(PROXY_HOST);
-        botOptions.setProxyPort(PROXY_PORT);
-        botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
+
+        if (isProxyEnabled) {
+            Authenticator.setDefault(new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+                }
+            });
+
+            botOptions.setProxyHost(proxyHost);
+            botOptions.setProxyPort(proxyPort);
+            botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
+        }
 
         return botOptions;
     }
@@ -134,9 +141,10 @@ public class BotService {
             if (botSession != null && botSession.isRunning()) {
                 botSession.stop();
                 sessions.remove(bot.getId());
-                bot.setStatus(Bot.Status.DISCONNECTED);
-                saveBot(bot);
             }
+            bot.setStatus(Bot.Status.DISCONNECTED);
+            saveBot(bot);
+            log.info("Bot {} is disconnected", bot.getName());
         }
     }
 }

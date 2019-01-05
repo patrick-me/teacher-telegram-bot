@@ -3,10 +3,7 @@ package com.patrick.telegram.model;
 import com.patrick.telegram.service.RouteService;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "UserSession")
@@ -31,6 +28,10 @@ public class UserSession {
     private String userQuestion;
     @Column
     private boolean finished;
+    @Column
+    private boolean correct;
+    @Column
+    private Date startDate;
 
     public UserSession() {
     }
@@ -40,10 +41,9 @@ public class UserSession {
         lessonId = lesson.getId();
         this.question = question;
 
-
         userKeyBoard = question.getKeyboard();
         userQuestion = "";
-        finished = false;
+        startDate = new Date();
     }
 
     public boolean isFinished() {
@@ -51,7 +51,8 @@ public class UserSession {
     }
 
     public boolean isCorrect() {
-        return question.getQuestion().equals(userQuestion);
+        correct = question.getQuestion().equals(userQuestion);
+        return correct;
     }
 
     public Question getQuestion() {
@@ -128,5 +129,9 @@ public class UserSession {
 
     public int getUserId() {
         return userId;
+    }
+
+    public Date getStartDate() {
+        return startDate;
     }
 }

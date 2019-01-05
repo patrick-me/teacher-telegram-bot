@@ -19,7 +19,7 @@ public class UserSessionService {
     }
 
 
-    public UserSession getSession(int userId) {
+    public UserSession getActiveSession(int userId) {
         return userSessionRepository.findOneByUserId(userId);
     }
 
@@ -31,4 +31,8 @@ public class UserSessionService {
         userSessionRepository.update(userSession.getId(), userSession.getUserKeyBoard(), userSession.getUserQuestion(), userSession.isFinished());
     }
 
+    /* Number of sessions correct/incorrect in succession */
+    public boolean isLastNumberOfSessionsCorrect(boolean lastUserSessionCorrect, int numberOfSessions, int lessonId, int userId) {
+        return userSessionRepository.isLastNumberOfSessionsCorrect(lastUserSessionCorrect, numberOfSessions, lessonId, userId);
+    }
 }

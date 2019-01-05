@@ -47,4 +47,8 @@ public class Sentence implements Serializable {
     public Collection<Question> getQuestions() {
         return questions;
     }
+
+    public void setQuestions(Collection<Question> questions) {
+        this.questions = questions;
+    }
 }

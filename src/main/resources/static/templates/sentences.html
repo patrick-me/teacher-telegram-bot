@@ -1,110 +1,24 @@
-<h4 ng-init="showSubPage = 'showList'">Sentences</h4>
+<div ng-if="sentenceAlert" class="alert alert-warning" role="alert">
+    {{ sentenceAlert }}
+</div>
+
+<h4 ng-init="$root.currentSentenceTemplate = 'templates/list_sentences.html'" style="padding: 16px 0px 16px 0px">
+    Предложения</h4>
+
 <div class="btn-group" role="group" aria-label="">
-    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showList'">Show List</button>
-    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showNew'">Add New</button>
-    <button type="button" class="btn btn-secondary" ng-click="showSubPage = 'showModify'">Modify</button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentSentenceTemplate = 'templates/list_sentences.html'">Список предложений
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentSentenceTemplate = 'templates/add_sentence.html'">Добавить предложение
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentSentenceTemplate = 'templates/modify_sentence.html'">Изменить предложение
+    </button>
 </div>
 
 <br>
 
-<div ng-if="showSubPage == 'showNew'">
-    <br>
-
-    <input type="text" class="form-control" ng-model="entity.name" placeholder="Name">
-
-    <div class="row" style="padding: 0px 16px 0px 16px">
-        <select class="form-control col-xl-11" ng-model="currentQT"
-                ng-options="qt as qt.name for qt in questionTypes">
-        </select>
-        <button type="button" class="btn btn-success float-right col-xl-1" ng-click="addQuestion(entity, currentQT)">Add
-            question
-        </button>
-    </div>
-
-    <br>
-    <div style="height: 400px; overflow-y: scroll;">
-        <div class="row" ng-repeat="q in entity.questions" style="padding: 30px 16px 0px 16px;">
-
-            <h4> {{ q.questionType.name }}</h4>
-            <button type="button" class="float-right btn btn-warning btn-sm" ng-click="removeQuestion(entity, q)">
-                Remove
-            </button>
-
-            <input type="text" class="form-control" ng-model="q.highlightedSentence"
-                   placeholder="Type the sentence with UPPERCASE word">
-            <input type="text" class="form-control" ng-model="q.question"
-                   placeholder="Type correct question for validation">
-            <div class="input-group">
-                <input type="text" class="form-control" ng-model="q.keyboard"
-                       placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
-
-                <button class="float-right btn btn-info">Shuffle</button>
-            </div>
-        </div>
-    </div>
-    <br>
-
-    <button type="button" class="btn btn-secondary float-right" ng-click="saveSentence(entity)">Save
-    </button>
-</div>
-
-<div ng-if="showSubPage == 'showModify'">
-    <br>
-
-    <select class="form-control" ng-model="currentEntity"
-            ng-options="entity as entity.name for entity in sentences">
-    </select>
-    <br>
-    <div ng-if="currentEntity">
-        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
-
-        <div class="row" style="padding: 0px 16px 0px 16px">
-            <select class="form-control col-xl-11" ng-model="currentQT"
-                    ng-options="qt as qt.name for qt in questionTypes">
-            </select>
-            <button type="button" class="btn btn-success float-right col-xl-1"
-                    ng-click="addQuestion(currentEntity, currentQT)">Add
-                question
-            </button>
-        </div>
-
-        <br>
-        <div style="height: 400px; overflow-y: scroll;">
-            <div class="row" ng-repeat="q in currentEntity.questions" style="padding: 30px 16px 0px 16px;">
-
-                <h4> {{ q.questionType.name }}</h4>
-
-                <button type="button" class="float-right btn btn-warning btn-sm"
-                        ng-click="removeQuestion(currentEntity, q)">
-                    Remove
-                </button>
-
-                <input type="text" class="form-control" ng-model="q.highlightedSentence"
-                       placeholder="Type the sentence with UPPERCASE word">
-                <input type="text" class="form-control" ng-model="q.question"
-                       placeholder="Type correct question for validation">
-
-                <div class="input-group">
-                    <input type="text" class="form-control" ng-model="q.keyboard"
-                           placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
-
-                    <button class="float-right btn btn-info" ng-click="q.keyboard = shuffleKeyBoard(q.keyboard)">Shuffle</button>
-                </div>
-            </div>
-        </div>
-        <br>
-
-        <button type="button" class="btn btn-secondary float-right" ng-click="saveSentence(currentEntity)">Save
-        </button>
-    </div>
-</div>
-
-<div ng-if="showSubPage == 'showList'" style="height: 500px; overflow-y: scroll;">
-    <br>
-    <div class="list-group-item" ng-repeat="entity in sentences | orderBy: 'name'">
-        <div class="row">
-            <div class="col-md-6">{{ entity.name }}</div>
-            <div class="col-md-6"><i>( {{ entity.questions.length }} questions) </i></div>
-        </div>
-    </div>
+<div id="sentence_content">
+    <div ng-include="$root.currentSentenceTemplate"></div>
 </div>

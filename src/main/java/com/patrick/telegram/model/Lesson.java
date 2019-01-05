@@ -5,6 +5,7 @@ import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Date;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -22,6 +23,9 @@ public class Lesson implements Serializable {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "creation_date")
+    private Date creationDate;
+
     @BatchSize(size = 25)
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "questionType_id")
@@ -33,6 +37,7 @@ public class Lesson implements Serializable {
     public Lesson(String name, String description) {
         this.name = name;
         this.description = description;
+        this.creationDate = new Date();
     }
 
     public int getId() {
@@ -49,5 +54,9 @@ public class Lesson implements Serializable {
 
     public Collection<QuestionType> getQuestionTypes() {
         return questionTypes;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
     }
 }

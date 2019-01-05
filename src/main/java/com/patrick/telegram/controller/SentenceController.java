@@ -31,6 +31,11 @@ public class SentenceController {
         return sentenceService.getSentence(id);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteSentence(@PathVariable int id) {
+        sentenceService.deleteSentence(id);
+    }
+
     @PostMapping
     public void addSentence(@RequestBody Sentence sentence) {
         sentenceService.addSentence(sentence);

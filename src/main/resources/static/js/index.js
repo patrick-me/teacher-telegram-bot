@@ -3,6 +3,24 @@
  */
 
 angular.module('bot-app', ['angular.filter', 'ngRoute'])
+    .directive("fileread", [function () {
+        return {
+            scope: {
+                fileread: "="
+            },
+            link: function (scope, element, attributes) {
+                element.bind("change", function (changeEvent) {
+                    var reader = new FileReader();
+                    reader.onload = function (loadEvent) {
+                        scope.$apply(function () {
+                            scope.fileread = loadEvent.target.result;
+                        });
+                    };
+                    reader.readAsDataURL(changeEvent.target.files[0]);
+                });
+            }
+        }
+    }])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider
             .when("/lessons", {templateUrl: 'templates/lessons.html'})
@@ -10,11 +28,21 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             .when("/sentences", {templateUrl: 'templates/sentences.html'})
             .when("/users", {templateUrl: 'templates/users.html'})
             .when("/bots", {templateUrl: 'templates/bots.html'})
-            .otherwise({
-                template: '<h4>This is main</h4>'
-            });
+            .when("/pandas", {templateUrl: 'templates/pandas/pandas.html'})
+            .otherwise({templateUrl: 'templates/lessons.html'});
     }])
     .controller('bot-controller', function ($scope, $http) {
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        });
+
+        $scope.currentPandaTemplate = '';
+        $scope.pandaAlert = "";
+
+        $scope.currentSentenceTemplate = '';
+        $scope.sentenceAlert = "";
+
         $scope.alphaLengthComparator = function (v1, v2) {
             // If we don't get strings, just compare by index
             if (v1.type !== 'string' || v2.type !== 'string') {
@@ -53,6 +81,31 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.getPandas = function () {
+            $http.get("/pandas")
+                .then(function (response) {
+                    $scope.pandas = response.data;
+                });
+        };
+
+        $scope.getConfig = function () {
+            $http.get("/configs/numberHowOftenSendPandas")
+                .then(function (response) {
+                    $scope.pandaSendNumber = response.data;
+                });
+        };
+
+        $scope.getSentenceQTforTooltip = function (sentence) {
+            if (sentence.questions.length > 0) {
+                var text = "";
+                angular.forEach(sentence.questions, function (v) {
+                    text += v.questionType.name + "\n";
+                });
+                return text.substring(0, text.length - 1);
+            }
+            return "There are no questions";
+        };
+
         $scope.getBots = function () {
             $http.get("/bots")
                 .then(function (response) {
@@ -72,13 +125,18 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.getSentences();
         $scope.getBots();
         $scope.getUsers();
+        $scope.getPandas();
+        $scope.getConfig();
 
         $scope.save = function (lesson) {
             //ToDo: validation
             var alqt = angular.copy($scope.allLessonQuestionTypes);
-            for (var i = alqt.length - 1; i >= 0; i--) {
-                if (!alqt[i].active) {
-                    alqt.splice(i, 1);
+
+            if (alqt) {
+                for (var i = alqt.length - 1; i >= 0; i--) {
+                    if (!alqt[i].active) {
+                        alqt.splice(i, 1);
+                    }
                 }
             }
 
@@ -98,10 +156,48 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         };
 
         $scope.saveSentence = function (sentence) {
+            $scope.sentenceAlert = "";
+
             $http.post("/sentences", sentence)
                 .then(function (response) {
                     $scope.getSentences();
                 });
+        };
+
+        $scope.savePanda = function (panda) {
+            $scope.pandaAlert = "";
+            $http.post("/pandas", panda)
+                .then(function (response) {
+                    $scope.getPandas();
+                });
+        };
+
+        $scope.saveConfig = function (config) {
+            $http.post("/configs", config)
+                .then(function (response) {
+                    $scope.getConfig();
+                });
+        };
+
+        $scope.deleteSentence = function (entity) {
+            $scope.sentenceAlert = "Предложение '" + entity.name + "' удалено со всеми зависимостями!";
+
+            $http.delete("/sentences/" + entity.id)
+                .then(function (response) {
+                    $scope.getSentences();
+                });
+        };
+
+        $scope.checkIfExist = function (entity) {
+            var existed = false;
+            angular.forEach($scope.sentences, function (value) {
+                if (value.name == entity.name) {
+                    existed = true;
+                    $scope.sentenceAlert = 'Предложение с таким названием уже существует!';
+                }
+            });
+
+            return existed;
         };
 
         $scope.saveBot = function (bot) {
@@ -188,6 +284,11 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         };
 
         $scope.addQuestion = function (sentence, questionType) {
+            if (!sentence) {
+                $scope.sentenceAlert = "Для того чтобы добавить вопрос, необходимо добавить предложение";
+                return false;
+            }
+
             var question = {
                 "questionType": angular.copy(questionType),
                 "highlightedSentence": "",

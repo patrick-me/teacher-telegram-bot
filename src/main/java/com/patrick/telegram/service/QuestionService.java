@@ -22,6 +22,11 @@ public class QuestionService {
         return questionRepository.findAll();
     }
 
+    public Question getRandomQuestion(int userId, int lessonId) {
+        int nextQuestionId = questionRepository.findRandomOneWithMinIndex(userId, lessonId);
+        return questionRepository.findOne(nextQuestionId);
+    }
+
     public void addQuestionType(Question question) {
         questionRepository.save(question);
     }

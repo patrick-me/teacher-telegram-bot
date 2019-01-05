@@ -14,7 +14,7 @@ import java.util.Date;
 public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query("SELECT u FROM User u WHERE u.telegramId=:id")
-    User findOneByTelegramId(@Param("id") int id);
+    User findOneByTelegramId(@Param("id") int telegramId);
 
     @Modifying()
     @Query("UPDATE User u SET u.lastLogin = :date WHERE u.id=:id")

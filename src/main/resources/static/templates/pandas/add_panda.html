@@ -1,0 +1,28 @@
+<br>
+<div>
+    <input type="text" class="form-control" ng-model="entity.name" placeholder="Дайте панде имя!">
+    <br>
+
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" id="check1" ng-model="entity.positive">
+        <label class="form-check-label" for="check1">Выберите для отправки при <b>правильном</b> ответе / Оставьте невыбранным для
+            отправки при <b>неправильном</b> ответе</label>
+    </div>
+    <br>
+
+    <div class="custom-file">
+        <input type="file" class="custom-file-input" id="customFileLang" lang="ru" fileread="entity.imageBase64">
+        <label class="custom-file-label" for="customFileLang">Загрузите панду в формате JPG размером 250px x 250px или меньше</label>
+    </div>
+    <br>
+    <br>
+
+    <div ng-if="entity.imageBase64">
+        <img src="{{ entity.imageBase64 }}" height="200" alt="Image preview...">
+    </div>
+    <br>
+
+    <button type="button" class="btn btn-success float-right"
+            ng-click="savePanda(entity); $root.currentPandaTemplate = 'templates/pandas/list_pandas.html'">Сохранить
+    </button>
+</div>

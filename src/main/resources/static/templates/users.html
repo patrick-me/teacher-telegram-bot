@@ -10,7 +10,8 @@
     <br>
 
     <select class="form-control" ng-model="currentEntity"
-            ng-options="entity as entity.lastName + ' ' + entity.firstName for entity in users" ng-change="currentUserChanged(currentEntity)">
+            ng-options="entity as entity.lastName + ' ' + entity.firstName for entity in users"
+            ng-change="currentUserChanged(currentEntity)">
     </select>
     <br>
     <hr>
@@ -43,9 +44,9 @@
     <div class="list-group-item" ng-repeat="entity in users | orderBy: 'lastName' | orderBy: 'firstName'">
         <div class="row">
             <div class="col-md-1"><i>{{ entity.id }}</i></div>
-            <div class="col-md-1"><i>{{ entity.telegramId }}</i></div>
+            <div class="col-md-2"><i>{{ entity.telegramId }}</i></div>
             <div class="col-md-2"><i>{{ entity.nickName }}</i></div>
-            <div class="col-md-4">{{ entity.firstName + ' ' + entity.lastName}}</div>
+            <div class="col-md-3">{{ entity.firstName + ' ' + entity.lastName}}</div>
             <div class="col-md-4">{{ entity.lastLogin | date:'medium' }}</div>
         </div>
     </div>

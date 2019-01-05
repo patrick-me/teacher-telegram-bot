@@ -3,16 +3,18 @@ package com.patrick.telegram;
 import com.patrick.telegram.config.SpringContext;
 import com.patrick.telegram.model.Bot;
 import com.patrick.telegram.service.RouteService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -20,6 +22,8 @@ import java.util.List;
  */
 
 public class TelegramBot extends TelegramLongPollingBot {
+
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final String BOT_NAME;
     private final String TOKEN;
@@ -44,11 +48,12 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        getRouteService().route(ID, update);
+        onUpdatesReceived(Collections.singletonList(update));
     }
 
     @Override
     public void onUpdatesReceived(List<Update> updates) {
+        log.info("updates count: {}", updates.size());
         updates.forEach(update -> getRouteService().route(ID, update));
     }
 

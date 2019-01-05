@@ -1,26 +1,20 @@
 package com.patrick.telegram.service;
 
-import com.patrick.telegram.model.Lesson;
-import com.patrick.telegram.model.Question;
-import com.patrick.telegram.model.QuestionType;
-import com.patrick.telegram.model.UserSession;
+import com.patrick.telegram.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.api.objects.MessageEntity;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -28,13 +22,14 @@ import java.util.stream.Collectors;
  */
 @Service
 public class RouteService {
+
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+
     private static final String NEXT_QUESTION = "Следующий вопрос";
     private static final String FINISH_LESSON = "Завершить урок";
     public static final String CHECK_QUESTION = "Проверить вопрос";
 
-    private static final String START_CMD = "Начать";
     private static final String LESSONS_CMD = "Уроки";
-    private static final String SECRET_CMD = "/secret";
 
 
     private final BotService botService;
@@ -42,34 +37,37 @@ public class RouteService {
     private final LessonService lessonService;
     private final QuestionService questionService;
     private final UserSessionService userSessionService;
+    private final PandaService pandaService;
 
     @Autowired
     public RouteService(BotService botService, UserService userService, LessonService lessonService,
-                        QuestionService questionService, UserSessionService userSessionService) {
+                        QuestionService questionService, UserSessionService userSessionService, PandaService pandaService) {
         this.botService = botService;
         this.userService = userService;
         this.lessonService = lessonService;
         this.questionService = questionService;
         this.userSessionService = userSessionService;
+        this.pandaService = pandaService;
     }
 
-
     public void route(int botId, Update update) {
+        try {
+            process(botId, update);
+        } catch (Exception e) {
+            log.error("processing failed", e);
+            e.printStackTrace();
+        }
+    }
 
+    private void process(int botId, Update update) {
         boolean hasMessage = update.hasMessage();
-        com.patrick.telegram.model.User user;
+        User user;
 
+        log.info("Processing");
         if (hasMessage) {
-            User tgUser = update.getMessage().getFrom();
-            user = userService.getUserByTID(tgUser.getId());
+            user = userService.getUser(update.getMessage().getFrom());
 
-            if (user == null) {
-                com.patrick.telegram.model.User createdUser = new com.patrick.telegram.model.User(tgUser);
-                userService.saveUser(createdUser);
-                user = createdUser;
-            }
-            userService.updateLastLogin(user.getId());
-
+            log.info("Processing, User: {}", user.getLastName());
             if (update.getMessage().hasEntities()) {
                 processCommands(botId, update.getMessage().getChatId(), update.getMessage().getEntities(), user);
             } else if (update.getMessage().hasText()) {
@@ -78,38 +76,39 @@ public class RouteService {
         }
     }
 
-    private void processCommands(int botId, Long chatId, List<MessageEntity> entities, com.patrick.telegram.model.User user) {
+    private void processCommands(int botId, Long chatId, List<MessageEntity> entities, User user) {
         for (MessageEntity e : entities) {
             processCommand(botId, chatId, e.getText(), user);
         }
     }
 
-    private void processCommand(int botId, Long chatId, String newMessage, com.patrick.telegram.model.User user) {
-        System.out.println("last: " + user.getLastMessage());
-        System.out.println("new: " + newMessage);
+    private void processCommand(int botId, Long chatId, String newMessage, User user) {
+        UserSession userSession = userSessionService.getActiveSession(user.getId());
 
-        UserSession userSession = userSessionService.getSession(user.getId());
+        //TODO: new method
 
+        log.info("Processing, LastMessage: {}, NewMessage: {}", user.getLastMessage(), newMessage);
+        /* User has studied an active lesson */
         if (userSession != null) {
             switch (newMessage) {
                 case FINISH_LESSON:
                     userSession.finishSession();
                     sendMessage(botId, chatId,
                             "Here, you could see lessons which Panda-trainer assigned to you",
-                            getLessonKeyBoard(user.getId())
+                            getStartKeyBoard()
                     );
                     break;
                 case NEXT_QUESTION:
                     userSession.finishSession();
-                    processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()));
+                    processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()), false);
                     break;
                 case CHECK_QUESTION:
                     String checkMessage = (userSession.isCorrect()) ? "*Correct!*" : "*Fail!*" +
                             "\nCorrect question: " + userSession.getCorrectQuestion() +
                             "\nYour question: " + userSession.getUserQuestion();
                     sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
-                    sendPanda(botId, chatId, userSession.isCorrect() ? "panda1.jpg" : "panda2.jpg");
-                    //TODO define commands and pictures
+                    sendPanda(botId, chatId, user.getId(), userSession);
+                    //TODO define commands
                     break;
                 default:
                     userSession.process(newMessage);
@@ -120,27 +119,21 @@ public class RouteService {
             }
             userSessionService.save(userSession);
 
-        } else if (Arrays.asList(FINISH_LESSON, LESSONS_CMD).contains(user.getLastMessage())) {
-            processChosenLesson(user, chatId, botId, lessonService.getUserLessonByName(user.getId(), newMessage));
+        } else if (LESSONS_CMD.equals(user.getLastMessage()) && !LESSONS_CMD.equals(newMessage)) {
+            /* User has started a lesson */
+            processChosenLesson(user, chatId, botId, lessonService.getUserLessonByName(user.getId(), newMessage), true);
         } else {
-
+            /* First user access or after finish lesson */
             switch (newMessage) {
-                case START_CMD:
-                    sendMessage(botId, chatId, "Welcome to Panda's Question bot", getStartKeyBoard());
-                    sendPanda(botId, chatId, "panda0.jpg");
-                    break;
                 case LESSONS_CMD:
-                    sendMessage(botId, chatId,
-                            "Here, you could see lessons which Panda-trainer assigned to you",
-                            getLessonKeyBoard(user.getId())
-                    );
-                    break;
-                case SECRET_CMD:
-                    sendMessage(botId, chatId,
-                            "It's a secret: " +
-                                    new String(Character.toChars(128515)) + "\u27a1" + "\u27a2" + "\u27a3" + "\u27a4" + "\u27a5" + "\u27a6" + "\u27a7" + " His younger *BROTHER* is in love with her older sister. → "
-                    );
-                    break;
+                    if (hasLessons(user.getId())) {
+                        sendMessage(botId, chatId,
+                                "Here, you could see lessons which Panda-trainer assigned to you",
+                                getLessonKeyBoard(user.getId())
+                        );
+                        break;
+                    }
+                    sendMessage(botId, chatId, "Ask your teacher about new lessons for you", getStartKeyBoard());
                 default:
                     sendMessage(botId, chatId, "Welcome to Panda's Question bot", getStartKeyBoard());
             }
@@ -150,16 +143,18 @@ public class RouteService {
         userService.saveUser(user);
     }
 
-    private void processChosenLesson(com.patrick.telegram.model.User user, Long chatId, int botId, Optional<Lesson> oLesson) {
+    private void processChosenLesson(User user, Long chatId, int botId, Optional<Lesson> oLesson, boolean sendDesc) {
         if (!oLesson.isPresent()) {
             return;
         }
 
         Lesson lesson = oLesson.get();
-        UserSession userSession = new UserSession(user, getRandomQuestion(lesson), lesson);
+        UserSession userSession = new UserSession(user, getRandomQuestion(user, lesson), lesson);
         userSessionService.save(userSession);
 
-        sendMessage(botId, chatId, lesson.getDescription());
+        if (sendDesc) {
+            sendMessage(botId, chatId, lesson.getDescription());
+        }
         sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(),
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
     }
@@ -174,6 +169,10 @@ public class RouteService {
 
     private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
                              List<String> keyBoardControlButtons) {
+        if (StringUtils.isEmpty(text)) {
+            return;
+        }
+
         SendMessage message = new SendMessage()
                 .setChatId(chatId)
                 .setText(text)
@@ -187,36 +186,41 @@ public class RouteService {
         botService.send(botId, message);
     }
 
-    private void sendPanda(int botId, long chatId, String pandaFile) {
-
-        try {
-
-            InputStream initialStream = new FileInputStream(
-                    new File("src/main/resources/" + pandaFile));
-            SendPhoto message = new SendPhoto()
-                    .setChatId(chatId)
-                    .setPhoto(pandaFile, initialStream);
-            botService.send(botId, message);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+    private void sendPanda(int botId, long chatId, int userId, UserSession userSession) {
+        if (shouldSendPanda(userId, userSession)) {
+            Optional<Panda> panda = userSession.isCorrect() ? pandaService.getPositivePanda() : pandaService.getNegativePanda();
+            panda.ifPresent(p ->
+                    sendPanda(
+                            botId,
+                            chatId,
+                            pandaService.getPandaInputStream(p)
+                    ));
         }
-
     }
 
-    private Question getRandomQuestion(Lesson lesson) {
-        int index = ThreadLocalRandom.current().nextInt(lesson.getQuestionTypes().size());
-        QuestionType questionType = new ArrayList<>(lesson.getQuestionTypes()).get(index);
+    private boolean shouldSendPanda(int userId, UserSession userSession) {
+        int frequency = pandaService.getNumberHowOftenSendPanda();
+        return userSessionService.isLastNumberOfSessionsCorrect(
+                userSession.isCorrect(),
+                frequency,
+                userSession.getLessonId(),
+                userId
+        );
+    }
 
-        List<Question> questions = questionService.getQuestions().stream()
-                .filter(qs -> qs.getQuestionType().getId() == questionType.getId())
-                .collect(Collectors.toList());
-
-        if (questions.isEmpty()) {
-            return getRandomQuestion(lesson);
+    private void sendPanda(int botId, long chatId, InputStream is) {
+        try {
+            SendPhoto message = new SendPhoto()
+                    .setChatId(chatId)
+                    .setPhoto("Panda", is);
+            botService.send(botId, message);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
-        index = ThreadLocalRandom.current().nextInt(questions.size());
-        return questions.get(index);
+    private Question getRandomQuestion(User user, Lesson lesson) {
+        return questionService.getRandomQuestion(user.getId(), lesson.getId());
     }
 
     private ReplyKeyboardMarkup getKeyBoard(List<String> keyboardElements, List<String> keyboardControlElements) {
@@ -252,6 +256,10 @@ public class RouteService {
         }
     }
 
+    private boolean hasLessons(int userId) {
+        return !lessonService.getUserLessons(userId).isEmpty();
+    }
+
     private List<String> getLessonKeyBoard(int userId) {
         return lessonService.getUserLessons(userId).stream()
                 .map(Lesson::getName)
@@ -267,6 +275,6 @@ public class RouteService {
     }
 
     private List<String> getStartKeyBoard() {
-        return Arrays.asList(START_CMD, LESSONS_CMD);
+        return Collections.singletonList(LESSONS_CMD);
     }
 }

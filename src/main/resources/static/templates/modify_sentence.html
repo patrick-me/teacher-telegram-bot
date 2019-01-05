@@ -1,0 +1,54 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.name + '  (' + entity.questions.length + ' вопрос(-а/-ов))' for entity in sentences">
+        <option disabled="disabled" value="">Выберите предложение</option>
+    </select>
+    <br>
+
+    <div ng-if="currentEntity">
+        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
+
+        <div class="row" style="padding: 0px 16px 0px 16px">
+            <select class="form-control col-md-10" ng-model="currentQT"
+                    ng-options="qt as qt.name for qt in questionTypes">
+                <option disabled="disabled" value="">Выберите тип вопроса</option>
+            </select>
+            <button type="button" class="btn btn-success float-right col-md-2"
+                    ng-click="addQuestion(currentEntity, currentQT)">Добавить вопрос
+            </button>
+        </div>
+
+        <br>
+        <div style="height: 400px; overflow-y: scroll;">
+            <div class="row" ng-repeat="q in currentEntity.questions" style="padding: 30px 16px 0px 16px;">
+
+
+                <h4 class="col-md-4"> {{ q.questionType.name }}</h4>
+                <button type="button" class="offset-md-6 col-md-2 btn btn-warning btn-sm float-right"
+                        ng-click="removeQuestion(currentEntity, q)">Удалить вопрос
+                </button>
+
+                <input type="text" class="form-control" ng-model="q.highlightedSentence"
+                       placeholder="Type the sentence with UPPERCASE word">
+                <input type="text" class="form-control" ng-model="q.question"
+                       placeholder="Type correct question for validation">
+
+                <div class="input-group">
+                    <input type="text" class="form-control" ng-model="q.keyboard"
+                           placeholder="Type buttons for bot keyboard (Use ; as delimiter)">
+
+                    <button class="float-right btn btn-info" ng-click="q.keyboard = shuffleKeyBoard(q.keyboard)">
+                        Shuffle
+                    </button>
+                </div>
+            </div>
+        </div>
+        <br>
+    </div>
+
+    <button ng-show="currentEntity" type="button" class="btn btn-success float-right"
+            ng-click="saveSentence(currentEntity); $root.currentSentenceTemplate = 'templates/list_sentences.html'">
+        Сохранить
+    </button>
+</div>
