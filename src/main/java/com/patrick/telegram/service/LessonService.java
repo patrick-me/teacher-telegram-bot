@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -42,7 +44,10 @@ public class LessonService {
             return new ArrayList<>();
         } else {
             user.getLessons().size();
-            return user.getLessons();
+            return user.getLessons()
+                    .stream()
+                    .sorted(Comparator.comparing(Lesson::getName))
+                    .collect(Collectors.toList());
         }
     }
 

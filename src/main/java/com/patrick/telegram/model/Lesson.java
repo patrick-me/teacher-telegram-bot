@@ -59,4 +59,15 @@ public class Lesson implements Serializable {
     public Date getCreationDate() {
         return creationDate;
     }
+
+    @Override
+    public String toString() {
+        return "Lesson{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", creationDate=" + creationDate +
+                ", questionTypes=" + questionTypes +
+                '}';
+    }
 }
