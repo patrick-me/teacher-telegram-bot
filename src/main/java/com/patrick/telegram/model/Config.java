@@ -15,12 +15,20 @@ public class Config {
     @Column(name = "value")
     private String value;
 
+    @Column(name = "isCommand", columnDefinition = "boolean default false")
+    private boolean isCommand;
+
     public Config() {
     }
 
-    public Config(String name, String value) {
+    public Config(String name, String value, boolean isCommand) {
         this.name = name;
         this.value = value;
+        this.isCommand = isCommand;
+    }
+
+    public boolean isCommand() {
+        return isCommand;
     }
 
     public String getValue() {

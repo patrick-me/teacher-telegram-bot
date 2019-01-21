@@ -30,6 +30,7 @@ public class RouteService {
     public static final String CHECK_QUESTION = "Проверить вопрос";
 
     private static final String LESSONS_CMD = "Уроки";
+    private static final String FAQ = "FAQ";
 
 
     private final BotService botService;
@@ -38,16 +39,19 @@ public class RouteService {
     private final QuestionService questionService;
     private final UserSessionService userSessionService;
     private final PandaService pandaService;
+    private final ConfigService configService;
 
     @Autowired
     public RouteService(BotService botService, UserService userService, LessonService lessonService,
-                        QuestionService questionService, UserSessionService userSessionService, PandaService pandaService) {
+                        QuestionService questionService, UserSessionService userSessionService,
+                        PandaService pandaService, ConfigService configService) {
         this.botService = botService;
         this.userService = userService;
         this.lessonService = lessonService;
         this.questionService = questionService;
         this.userSessionService = userSessionService;
         this.pandaService = pandaService;
+        this.configService = configService;
     }
 
     public void route(int botId, Update update) {
@@ -94,7 +98,7 @@ public class RouteService {
                 case FINISH_LESSON:
                     userSession.finishSession();
                     sendMessage(botId, chatId,
-                            "Here, you could see lessons which Panda-trainer assigned to you",
+                            configService.getCommandDescription(FINISH_LESSON),
                             getStartKeyBoard()
                     );
                     break;
@@ -103,12 +107,18 @@ public class RouteService {
                     processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()), false);
                     break;
                 case CHECK_QUESTION:
-                    String checkMessage = (userSession.isCorrect()) ? "*Correct!*" : "*Fail!*" +
-                            "\nCorrect question: " + userSession.getCorrectQuestion() +
-                            "\nYour question: " + userSession.getUserQuestion();
+                    String correctDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При верном ответе)");
+                    String incorrectDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе)");
+                    String incorrectDesc1 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом правильного ответа");
+                    String incorrectDesc2 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом введенного ответа");
+
+                    String checkMessage = (userSession.isCorrect()) ? correctDesc :
+                            incorrectDesc + "\n" +
+                                    incorrectDesc1 + " " + userSession.getCorrectQuestion() + "\n" +
+                                    incorrectDesc2 + " " + userSession.getUserQuestion();
+
                     sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
                     sendPanda(botId, chatId, user.getId(), userSession);
-                    //TODO define commands
                     break;
                 default:
                     userSession.process(newMessage);
@@ -128,14 +138,24 @@ public class RouteService {
                 case LESSONS_CMD:
                     if (hasLessons(user.getId())) {
                         sendMessage(botId, chatId,
-                                "Here, you could see lessons which Panda-trainer assigned to you",
+                                configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)"),
                                 getLessonKeyBoard(user.getId())
                         );
                         break;
                     }
-                    sendMessage(botId, chatId, "Ask your teacher about new lessons for you", getStartKeyBoard());
+                    sendMessage(
+                            botId,
+                            chatId,
+                            configService.getCommandDescription(
+                                    LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)"
+                            ),
+                            getStartKeyBoard()
+                    );
+                case FAQ:
+                    sendMessage(botId, chatId, configService.getCommandDescription(FAQ));
+                    break;
                 default:
-                    sendMessage(botId, chatId, "Welcome to Panda's Question bot", getStartKeyBoard());
+                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие"), getStartKeyBoard());
             }
         }
 
@@ -275,6 +295,6 @@ public class RouteService {
     }
 
     private List<String> getStartKeyBoard() {
-        return Collections.singletonList(LESSONS_CMD);
+        return Arrays.asList(LESSONS_CMD, FAQ);
     }
 }

@@ -19,6 +19,16 @@ public class ConfigService {
         this.configRepository = configRepository;
     }
 
+    public String getCommandDescription(String command) {
+        Config config = configRepository.get(command);
+        if(config == null) {
+            configRepository.save(new Config(command, "", true));
+            return "";
+        }
+
+        return config.getValue();
+    }
+
     public int getNumberHowOftenSendPandas() {
         return Integer.valueOf(getConfig(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY).getValue());
     }
@@ -28,7 +38,7 @@ public class ConfigService {
             case NUMBER_HOW_OFTEN_SEND_PANDAS_KEY:
                 return Optional.ofNullable(configRepository.get(name))
                         .orElse(
-                                new Config(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY, NUMBER_HOW_OFTEN_SEND_PANDAS_VALUE)
+                                new Config(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY, NUMBER_HOW_OFTEN_SEND_PANDAS_VALUE, false)
                         );
             default:
                 throw new RuntimeException("Config is not found");
