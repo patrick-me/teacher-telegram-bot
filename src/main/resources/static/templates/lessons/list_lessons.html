@@ -2,14 +2,30 @@
 <div style="height: 400px; overflow-y: scroll;">
     <br>
     <div class="list-group-item" ng-repeat="entity in lessons | orderBy: 'name' : false : alphaLengthComparator">
-        <div class="row">
-            <div class="col-md-4">{{ entity.name }}</div>
+        <div class="row" style="padding: 0px 16px 0px 16px">
+            <div class="col-md-3">{{ entity.name }}</div>
             <div class="col-md-6"><i>{{ entity.description }}</i></div>
             <div class="col-md-2">
+                <button class="btn btn-info btn-sm float-right"
+                        ng-click="selected = !selected; foundSentences = findSentences(entity)">Предложения
+                </button>
+            </div>
+            <div class="col-md-1">
                 <button class="btn btn-warning btn-sm float-right"
                         ng-click="deleteLesson(entity)">Удалить
                 </button>
             </div>
+        </div>
+
+        <div style="padding: 16px 16px 16px 16px" ng-if="selected" class="row">
+            <table class="table table-bordered">
+
+                <tbody>
+                <tr ng-repeat="s in foundSentences | orderBy: 'name' : false : alphaLengthComparator">
+                    <td>{{ s.name }}</td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

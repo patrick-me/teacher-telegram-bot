@@ -323,6 +323,31 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             return keyboard;
         };
 
+        $scope.findSentences = function (lesson) {
+            var s = angular.copy($scope.sentences);
+
+            var lessonQuestionTypes = {};
+            angular.forEach(lesson.questionTypes, function (value) {
+                lessonQuestionTypes[value.id] = true;
+            });
+
+            var result = [];
+            angular.forEach(s, function (sen) {
+                var found = false;
+                angular.forEach(sen.questions, function (question) {
+                    if (lessonQuestionTypes[question.questionType.id]) {
+                        found = true;
+                    }
+                });
+
+                if (found) {
+                    result.push(sen);
+                }
+            });
+
+            return result;
+        };
+
         function shuffle(array) {
             var m = array.length, t, i;
 
