@@ -23,13 +23,13 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
     }])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider
-            .when("/lessons", {templateUrl: 'templates/lessons.html'})
+            .when("/lessons", {templateUrl: 'templates/lessons/lessons.html'})
             .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
-            .when("/sentences", {templateUrl: 'templates/sentences.html'})
+            .when("/sentences", {templateUrl: 'templates/sentences/sentences.html'})
             .when("/users", {templateUrl: 'templates/users.html'})
             .when("/bots", {templateUrl: 'templates/bots.html'})
             .when("/pandas", {templateUrl: 'templates/pandas/pandas.html'})
-            .otherwise({templateUrl: 'templates/lessons.html'});
+            .otherwise({templateUrl: 'templates/lessons/lessons.html'});
     }])
     .controller('bot-controller', function ($scope, $http) {
 
@@ -37,11 +37,14 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             $('[data-toggle="tooltip"]').tooltip()
         });
 
-        $scope.currentPandaTemplate = '';
         $scope.pandaAlert = "";
-
-        $scope.currentSentenceTemplate = '';
         $scope.sentenceAlert = "";
+        $scope.lessonAlert = "";
+
+        $scope.currentPandaTemplate = '';
+        $scope.currentSentenceTemplate = '';
+        $scope.currentLessonTemplate = '';
+
 
         $scope.alphaLengthComparator = function (v1, v2) {
             // If we don't get strings, just compare by index
@@ -128,9 +131,9 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.getPandas();
         $scope.getConfig();
 
-        $scope.save = function (lesson) {
+        $scope.saveLesson = function (lesson) {
             //ToDo: validation
-            var alqt = angular.copy($scope.allLessonQuestionTypes);
+            var alqt = angular.copy(lesson.questionTypes);
 
             if (alqt) {
                 for (var i = alqt.length - 1; i >= 0; i--) {
@@ -188,6 +191,15 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.deleteLesson = function (entity) {
+            $scope.lessonAlert = "Урок '" + entity.name + "' удален. Предложения не удаляются!";
+
+            $http.delete("/lessons/" + entity.id)
+                .then(function (response) {
+                    $scope.getLessons();
+                });
+        };
+
         $scope.checkIfExist = function (entity) {
             var existed = false;
             angular.forEach($scope.sentences, function (value) {
@@ -207,29 +219,26 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
-        $scope.currentLesson = {};
-        $scope.allLessonQuestionTypes = angular.copy($scope.questionTypes);
-
         $scope.getLessonQuestionTypes = function (lesson) {
             if (lesson === undefined || lesson === null) {
-                return $scope.questionTypes;
+                return angular.copy($scope.questionTypes);
             }
 
             var hash = {};
             angular.forEach(lesson.questionTypes, function (value) {
+                if (value.active === undefined) {
+                    value.active = true;
+                }
                 hash[value.id] = value;
             });
+
+            //alert(JSON.stringify(hash, null, 4));
             var qt = angular.copy($scope.questionTypes);
             angular.forEach(qt, function (value) {
-                value.active = hash[value.id] !== undefined;
+                var h = hash[value.id];
+                value.active = h !== undefined && h.active;
             });
             return qt;
-        };
-
-
-        $scope.currentLessonChanged = function (cl) {
-            $scope.currentLesson = cl;
-            $scope.allLessonQuestionTypes = $scope.getLessonQuestionTypes($scope.currentLesson);
         };
 
         $scope.getUserLessons = function (user) {

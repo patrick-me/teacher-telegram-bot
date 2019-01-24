@@ -1,0 +1,13 @@
+<br>
+<div>
+    <br>
+    <input type="text" class="form-control" ng-model="entity.name" placeholder="Name">
+    <textarea type="text" class="form-control" rows="3" ng-model="entity.description" placeholder="Description">
+    </textarea>
+    <br>
+
+    <button type="button" class="btn btn-success float-right"
+            ng-click="saveLesson(entity); $root.currentLessonTemplate = 'templates/lessons/list_lessons.html'">
+        Сохранить
+    </button>
+</div>

@@ -1,0 +1,25 @@
+<div ng-if="lessonAlert" class="alert alert-warning" role="alert">
+    {{ lessonAlert }}
+</div>
+
+<h4 ng-init="$root.currentLessonTemplate = 'templates/lessons/list_lessons.html'" style="padding: 16px 0px 16px 0px">
+    Уроки
+</h4>
+
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentLessonTemplate = 'templates/lessons/list_lessons.html'">Список уроков
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentLessonTemplate = 'templates/lessons/add_lesson.html'">Добавить урок
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentLessonTemplate = 'templates/lessons/modify_lesson.html'">Изменить урок
+    </button>
+</div>
+
+<br>
+
+<div id="lesson_content">
+    <div ng-include="$root.currentLessonTemplate"></div>
+</div>
