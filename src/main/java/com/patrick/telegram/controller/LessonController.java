@@ -40,4 +40,9 @@ public class LessonController {
     public void saveUserLessons(@PathVariable int id, @RequestBody Collection<Lesson> lessons) {
         lessonService.saveUserLessons(id, lessons);
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteLesson(@PathVariable int id) {
+        lessonService.deleteLesson(id);
+    }
 }

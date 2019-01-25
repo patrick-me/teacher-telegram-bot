@@ -11,5 +11,5 @@ import org.springframework.data.repository.query.Param;
 public interface ConfigRepository extends JpaRepository<Config, Integer> {
 
     @Query(value = "select c from Config c where c.name = :name")
-    Config get(@Param("name") String numberHowOftenSendPandas);
+    Config get(@Param("name") String configName);
 }

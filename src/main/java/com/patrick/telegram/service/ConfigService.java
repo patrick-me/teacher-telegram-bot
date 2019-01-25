@@ -5,6 +5,7 @@ import com.patrick.telegram.repository.ConfigRepository;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Collection;
 import java.util.Optional;
 
 @Service
@@ -19,6 +20,16 @@ public class ConfigService {
         this.configRepository = configRepository;
     }
 
+    public String getCommandDescription(String command, String defaultValue) {
+        Config config = configRepository.get(command);
+        if (config == null) {
+            configRepository.save(new Config(command, defaultValue, true));
+            return defaultValue;
+        }
+
+        return config.getValue();
+    }
+
     public int getNumberHowOftenSendPandas() {
         return Integer.valueOf(getConfig(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY).getValue());
     }
@@ -28,7 +39,7 @@ public class ConfigService {
             case NUMBER_HOW_OFTEN_SEND_PANDAS_KEY:
                 return Optional.ofNullable(configRepository.get(name))
                         .orElse(
-                                new Config(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY, NUMBER_HOW_OFTEN_SEND_PANDAS_VALUE)
+                                new Config(NUMBER_HOW_OFTEN_SEND_PANDAS_KEY, NUMBER_HOW_OFTEN_SEND_PANDAS_VALUE, false)
                         );
             default:
                 throw new RuntimeException("Config is not found");
@@ -37,5 +48,9 @@ public class ConfigService {
 
     public void saveConfig(Config config) {
         configRepository.save(config);
+    }
+
+    public Collection<Config> getConfigs() {
+        return configRepository.findAll();
     }
 }

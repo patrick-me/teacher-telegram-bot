@@ -1,0 +1,18 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="config as config.name for config in configs | filter : { 'command' : true } | orderBy: 'name' : false : alphaLengthComparator">
+        <option disabled="disabled" value="">Выберите конфигурацию</option>
+    </select>
+
+    <div ng-if="currentEntity">
+        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name" readonly>
+        <textarea type="text" class="form-control" rows="3" ng-model="currentEntity.value"
+                  placeholder="Description"></textarea>
+
+        <button type="button" class="btn btn-success float-right"
+                ng-click="saveConfig(currentEntity); $root.currentConfigTemplate = 'templates/configs/list_configs.html'">
+            Сохранить
+        </button>
+    </div>
+</div>

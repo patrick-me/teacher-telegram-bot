@@ -66,4 +66,10 @@ public class LessonService {
             userRepository.save(user);
         }
     }
+
+    public void deleteLesson(int id) {
+        lessonRepository.deleteAssignedQuestionTypesByLesson(id);
+        lessonRepository.deleteAssignedUsersByLesson(id);
+        lessonRepository.delete(id);
+    }
 }

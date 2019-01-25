@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -33,6 +34,8 @@ public class UserSessionService {
 
     /* Number of sessions correct/incorrect in succession */
     public boolean isLastNumberOfSessionsCorrect(boolean lastUserSessionCorrect, int numberOfSessions, int lessonId, int userId) {
-        return userSessionRepository.isLastNumberOfSessionsCorrect(lastUserSessionCorrect, numberOfSessions, lessonId, userId);
+        return Optional.ofNullable(
+                userSessionRepository.isLastNumberOfSessionsCorrect(lastUserSessionCorrect, numberOfSessions, lessonId, userId)
+        ).orElse(Boolean.FALSE);
     }
 }

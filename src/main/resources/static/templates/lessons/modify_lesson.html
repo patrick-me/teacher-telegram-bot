@@ -1,0 +1,33 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="lesson as lesson.name for lesson in lessons"
+            ng-change="currentEntity.questionTypes = getLessonQuestionTypes(currentEntity)">
+        <option disabled="disabled" value="">Выберите урок</option>
+    </select>
+
+    <div ng-if="currentEntity">
+        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
+        <textarea type="text" class="form-control" rows="3" ng-model="currentEntity.description"
+                  placeholder="Description"></textarea>
+
+        <br>
+
+        <div style="height: 400px; overflow-y: scroll;">
+            <br>
+            <div class="list-group-item"
+                 ng-repeat="entity in currentEntity.questionTypes | orderBy: 'name'">
+                <div class="row">
+                    <div class="col-md-1"><input type="checkbox" ng-model="entity.active"/></div>
+                    <div class="col-md-5">{{ entity.name }}</div>
+                    <div class="col-md-6"><i>{{ entity.description }}</i></div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-success float-right"
+                ng-click="saveLesson(currentEntity); $root.currentLessonTemplate = 'templates/lessons/list_lessons.html'">
+            Сохранить
+        </button>
+    </div>
+</div>
