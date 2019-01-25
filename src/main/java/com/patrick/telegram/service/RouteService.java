@@ -90,7 +90,6 @@ public class RouteService {
         UserSession userSession = userSessionService.getActiveSession(user.getId());
 
         //TODO: new method
-
         log.info("Processing, LastMessage: {}, NewMessage: {}", user.getLastMessage(), newMessage);
         /* User has studied an active lesson */
         if (userSession != null) {
@@ -98,7 +97,7 @@ public class RouteService {
                 case FINISH_LESSON:
                     userSession.finishSession();
                     sendMessage(botId, chatId,
-                            configService.getCommandDescription(FINISH_LESSON),
+                            configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
                             getStartKeyBoard()
                     );
                     break;
@@ -107,10 +106,10 @@ public class RouteService {
                     processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()), false);
                     break;
                 case CHECK_QUESTION:
-                    String correctDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При верном ответе)");
-                    String incorrectDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе)");
-                    String incorrectDesc1 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом правильного ответа");
-                    String incorrectDesc2 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом введенного ответа");
+                    String correctDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При верном ответе)", "Великолепно!");
+                    String incorrectDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе)", "Нужно подучиться, в другой раз точно повезет!");
+                    String incorrectDesc1 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом правильного ответа", "Вот как надо было:");
+                    String incorrectDesc2 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом введенного ответа", "А вот так не надо:");
 
                     String checkMessage = (userSession.isCorrect()) ? correctDesc :
                             incorrectDesc + "\n" +
@@ -138,7 +137,7 @@ public class RouteService {
                 case LESSONS_CMD:
                     if (hasLessons(user.getId())) {
                         sendMessage(botId, chatId,
-                                configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)"),
+                                configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
                                 getLessonKeyBoard(user.getId())
                         );
                         break;
@@ -147,15 +146,17 @@ public class RouteService {
                             botId,
                             chatId,
                             configService.getCommandDescription(
-                                    LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)"
+                                    LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
+                                    "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
                             ),
                             getStartKeyBoard()
                     );
+                    break;
                 case FAQ:
-                    sendMessage(botId, chatId, configService.getCommandDescription(FAQ));
+                    sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
                     break;
                 default:
-                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие"), getStartKeyBoard());
+                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard());
             }
         }
 
@@ -189,14 +190,17 @@ public class RouteService {
 
     private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
                              List<String> keyBoardControlButtons) {
-        if (StringUtils.isEmpty(text)) {
-            return;
-        }
+
+        //TODO: check * and _ markdown
 
         SendMessage message = new SendMessage()
                 .setChatId(chatId)
                 .setText(text)
                 .enableMarkdown(true);
+
+        if (StringUtils.isEmpty(text)) {
+            message.setText("EMPTY TEXT - CHANGE ME");
+        }
 
         ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons);
 

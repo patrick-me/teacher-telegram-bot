@@ -40,7 +40,7 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Intege
             ") T2\n" +
             "limit 1;",
             nativeQuery = true)
-    boolean isLastNumberOfSessionsCorrect(
+    Boolean isLastNumberOfSessionsCorrect(
             @Param("correct") boolean lastUserSessionCorrect,
             @Param("limit") int numberOfSessions,
             @Param("lesson_id") int lessonId,

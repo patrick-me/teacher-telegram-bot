@@ -29,6 +29,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             .when("/users", {templateUrl: 'templates/users.html'})
             .when("/bots", {templateUrl: 'templates/bots.html'})
             .when("/pandas", {templateUrl: 'templates/pandas/pandas.html'})
+            .when("/configs", {templateUrl: 'templates/configs/configs.html'})
             .otherwise({templateUrl: 'templates/lessons/lessons.html'});
     }])
     .controller('bot-controller', function ($scope, $http) {
@@ -40,10 +41,12 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.pandaAlert = "";
         $scope.sentenceAlert = "";
         $scope.lessonAlert = "";
+        $scope.configAlert = "";
 
         $scope.currentPandaTemplate = '';
         $scope.currentSentenceTemplate = '';
         $scope.currentLessonTemplate = '';
+        $scope.currentConfigTemplate = '';
 
 
         $scope.alphaLengthComparator = function (v1, v2) {
@@ -98,6 +101,13 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
                 });
         };
 
+        $scope.getConfigs = function () {
+            $http.get("/configs")
+                .then(function (response) {
+                    $scope.configs = response.data;
+                });
+        };
+
         $scope.getSentenceQTforTooltip = function (sentence) {
             if (sentence.questions.length > 0) {
                 var text = "";
@@ -130,6 +140,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.getUsers();
         $scope.getPandas();
         $scope.getConfig();
+        $scope.getConfigs();
 
         $scope.saveLesson = function (lesson) {
             //ToDo: validation
@@ -176,9 +187,11 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         };
 
         $scope.saveConfig = function (config) {
+            //alert(JSON.stringify(config, null, 4));
             $http.post("/configs", config)
                 .then(function (response) {
                     $scope.getConfig();
+                    $scope.getConfigs();
                 });
         };
 

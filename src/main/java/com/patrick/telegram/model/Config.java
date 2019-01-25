@@ -16,7 +16,7 @@ public class Config {
     private String value;
 
     @Column(name = "isCommand", columnDefinition = "boolean default false")
-    private boolean isCommand;
+    private boolean command;
 
     public Config() {
     }
@@ -24,11 +24,11 @@ public class Config {
     public Config(String name, String value, boolean isCommand) {
         this.name = name;
         this.value = value;
-        this.isCommand = isCommand;
+        this.command = isCommand;
     }
 
     public boolean isCommand() {
-        return isCommand;
+        return command;
     }
 
     public String getValue() {
