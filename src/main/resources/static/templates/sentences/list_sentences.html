@@ -1,6 +1,6 @@
 <br>
 <div style="height: 400px; overflow-y: scroll;">
-    <div class="list-group-item" ng-repeat="entity in sentences | orderBy: 'name'">
+    <div class="list-group-item" ng-repeat="entity in sentences | filter : sentenceFilter | orderBy: 'name'">
         <div class="row">
             <div class="col-md-6">{{ entity.name }}</div>
             <div class="col-md-4">

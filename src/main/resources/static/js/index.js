@@ -56,6 +56,8 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.currentQuestionTypeTemplate = '';
 
 
+        $scope.sentenceFilter = '';
+
         $scope.alphaLengthComparator = function (v1, v2) {
             // If we don't get strings, just compare by index
             if (v1.type !== 'string' || v2.type !== 'string') {
