@@ -22,11 +22,15 @@ public class Message implements Serializable {
     @Column(name = "processed", columnDefinition = "boolean default false")
     private boolean isProcessed;
 
+    @Column(name = "user_id")
+    private int userId;
+
     public Message() {
     }
 
-    public Message(String name) {
+    public Message(String name, int userId) {
         this.name = name;
+        this.userId = userId;
         this.date = Date.from(Instant.now());
         this.isProcessed = false;
     }
@@ -37,6 +41,10 @@ public class Message implements Serializable {
 
     public String getName() {
         return name;
+    }
+
+    public int getUserId() {
+        return userId;
     }
 
     public Instant getDate() {

@@ -40,11 +40,12 @@ public class RouteService {
     private final UserSessionService userSessionService;
     private final PandaService pandaService;
     private final ConfigService configService;
+    private final MessageService messageService;
 
     @Autowired
     public RouteService(BotService botService, UserService userService, LessonService lessonService,
                         QuestionService questionService, UserSessionService userSessionService,
-                        PandaService pandaService, ConfigService configService) {
+                        PandaService pandaService, ConfigService configService, MessageService messageService) {
         this.botService = botService;
         this.userService = userService;
         this.lessonService = lessonService;
@@ -52,6 +53,7 @@ public class RouteService {
         this.userSessionService = userSessionService;
         this.pandaService = pandaService;
         this.configService = configService;
+        this.messageService = messageService;
     }
 
     public void route(int botId, Update update) {
@@ -88,9 +90,10 @@ public class RouteService {
 
     private void processCommand(int botId, Long chatId, String newMessage, User user) {
         UserSession userSession = userSessionService.getActiveSession(user.getId());
+        String userLastMessage = messageService.getLastMessage(user.getId());
 
         //TODO: new method
-        log.info("Processing, LastMessage: {}, NewMessage: {}", user.getLastMessage(), newMessage);
+        log.info("Processing, LastMessage: {}, NewMessage: {}", userLastMessage, newMessage);
         /* User has studied an active lesson */
         if (userSession != null) {
             switch (newMessage) {
@@ -128,7 +131,7 @@ public class RouteService {
             }
             userSessionService.save(userSession);
 
-        } else if (LESSONS_CMD.equals(user.getLastMessage()) && !LESSONS_CMD.equals(newMessage)) {
+        } else if (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) {
             /* User has started a lesson */
             processChosenLesson(user, chatId, botId, lessonService.getUserLessonByName(user.getId(), newMessage), true);
         } else {
@@ -160,7 +163,7 @@ public class RouteService {
             }
         }
 
-        user.addMessage(newMessage);
+        messageService.save(newMessage, user.getId());
         userService.saveUser(user);
     }
 
