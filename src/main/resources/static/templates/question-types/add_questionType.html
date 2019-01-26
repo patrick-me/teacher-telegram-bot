@@ -1,0 +1,13 @@
+<br>
+<div>
+    <br>
+    <input type="text" class="form-control" ng-model="entity.name" placeholder="Name">
+    <textarea type="text" class="form-control" rows="3" ng-model="entity.description" placeholder="Description">
+    </textarea>
+    <br>
+
+    <button type="button" class="btn btn-success float-right"
+            ng-click="saveQT(entity); $root.currentQuestionTypeTemplate = 'templates/question-types/list_questionTypes.html'">
+        Сохранить
+    </button>
+</div>

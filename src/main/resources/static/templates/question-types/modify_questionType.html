@@ -1,0 +1,23 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.name for entity in questionTypes | orderBy: 'name'">
+        <option disabled="disabled" value="">Выберите тип вопроса</option>
+    </select>
+
+    <div ng-if="currentEntity">
+
+        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name">
+
+        <textarea type="text" class="form-control" rows="3" ng-model="currentEntity.description"
+                  placeholder="Description">
+        </textarea>
+
+        <br>
+
+        <button type="button" class="btn btn-success float-right"
+                ng-click="saveQT(entity); $root.currentQuestionTypeTemplate = 'templates/question-types/list_questionTypes.html'">
+            Сохранить
+        </button>
+    </div>
+</div>

@@ -24,7 +24,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider
             .when("/lessons", {templateUrl: 'templates/lessons/lessons.html'})
-            .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
+            .when("/questionTypes", {templateUrl: 'templates/question-types/questionTypes.html'})
             .when("/sentences", {templateUrl: 'templates/sentences/sentences.html'})
             .when("/users", {templateUrl: 'templates/users/users.html'})
             .when("/bots", {templateUrl: 'templates/bots/bots.html'})
@@ -44,6 +44,8 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.configAlert = "";
         $scope.userAlert = "";
         $scope.botAlert = "";
+        $scope.questionTypeAlert = "";
+
 
         $scope.currentPandaTemplate = '';
         $scope.currentSentenceTemplate = '';
@@ -51,6 +53,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.currentConfigTemplate = '';
         $scope.currentUserTemplate = '';
         $scope.currentBotTemplate = '';
+        $scope.currentQuestionTypeTemplate = '';
 
 
         $scope.alphaLengthComparator = function (v1, v2) {

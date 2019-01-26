@@ -1,0 +1,24 @@
+<div ng-if="questionTypeAlert" class="alert alert-warning" role="alert">
+    {{ questionTypeAlert }}
+</div>
+
+<h4 ng-init="$root.currentQuestionTypeTemplate = 'templates/question-types/list_questionTypes.html'" style="padding: 16px 0px 16px 0px">
+    Типы вопросов</h4>
+
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentQuestionTypeTemplate = 'templates/question-types/list_questionTypes.html'">Список типов вопросов
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentQuestionTypeTemplate = 'templates/question-types/add_questionType.html'">Добавить тип вопроса
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentQuestionTypeTemplate = 'templates/question-types/modify_questionType.html'">Изменить тип вопроса
+    </button>
+</div>
+
+<br>
+
+<div id="questionType_content">
+    <div ng-include="$root.currentQuestionTypeTemplate"></div>
+</div>
