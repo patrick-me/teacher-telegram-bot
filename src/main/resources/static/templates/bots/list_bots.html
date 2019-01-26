@@ -1,0 +1,12 @@
+<br>
+
+<div style="height: 400px; overflow-y: scroll;">
+    <br>
+    <div class="list-group-item" ng-repeat="entity in bots | orderBy: 'name'">
+        <div class="row">
+            <div class="col-md-3">{{ entity.name }}</div>
+            <div class="col-md-6">{{ entity.token }}</div>
+            <div class="col-md-3"><i>{{ entity.status }}</i></div>
+        </div>
+    </div>
+</div>

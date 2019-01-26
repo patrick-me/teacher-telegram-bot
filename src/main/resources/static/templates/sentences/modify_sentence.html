@@ -1,7 +1,7 @@
 <br>
 <div>
     <select class="form-control" ng-model="currentEntity"
-            ng-options="entity as entity.name + '  (' + entity.questions.length + ' вопрос(-а/-ов))' for entity in sentences">
+            ng-options="entity as entity.name + '  (' + entity.questions.length + ' вопрос(-а/-ов))' for entity in sentences | filter : sentenceFilter">
         <option disabled="disabled" value="">Выберите предложение</option>
     </select>
     <br>

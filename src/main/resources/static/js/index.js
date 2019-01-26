@@ -24,10 +24,10 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
     .config(['$routeProvider', function ($routeProvider) {
         $routeProvider
             .when("/lessons", {templateUrl: 'templates/lessons/lessons.html'})
-            .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
+            .when("/questionTypes", {templateUrl: 'templates/question-types/questionTypes.html'})
             .when("/sentences", {templateUrl: 'templates/sentences/sentences.html'})
-            .when("/users", {templateUrl: 'templates/users.html'})
-            .when("/bots", {templateUrl: 'templates/bots.html'})
+            .when("/users", {templateUrl: 'templates/users/users.html'})
+            .when("/bots", {templateUrl: 'templates/bots/bots.html'})
             .when("/pandas", {templateUrl: 'templates/pandas/pandas.html'})
             .when("/configs", {templateUrl: 'templates/configs/configs.html'})
             .otherwise({templateUrl: 'templates/lessons/lessons.html'});
@@ -42,12 +42,21 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.sentenceAlert = "";
         $scope.lessonAlert = "";
         $scope.configAlert = "";
+        $scope.userAlert = "";
+        $scope.botAlert = "";
+        $scope.questionTypeAlert = "";
+
 
         $scope.currentPandaTemplate = '';
         $scope.currentSentenceTemplate = '';
         $scope.currentLessonTemplate = '';
         $scope.currentConfigTemplate = '';
+        $scope.currentUserTemplate = '';
+        $scope.currentBotTemplate = '';
+        $scope.currentQuestionTypeTemplate = '';
 
+
+        $scope.sentenceFilter = '';
 
         $scope.alphaLengthComparator = function (v1, v2) {
             // If we don't get strings, just compare by index
@@ -143,18 +152,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.getConfigs();
 
         $scope.saveLesson = function (lesson) {
-            //ToDo: validation
-            var alqt = angular.copy(lesson.questionTypes);
-
-            if (alqt) {
-                for (var i = alqt.length - 1; i >= 0; i--) {
-                    if (!alqt[i].active) {
-                        alqt.splice(i, 1);
-                    }
-                }
-            }
-
-            lesson.questionTypes = alqt;
+            lesson.questionTypes = getOnlyActiveEntities(lesson.questionTypes);
             $http.post("/lessons", lesson)
                 .then(function (response) {
                     $scope.getLessons();
@@ -233,25 +231,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         };
 
         $scope.getLessonQuestionTypes = function (lesson) {
-            if (lesson === undefined || lesson === null) {
-                return angular.copy($scope.questionTypes);
-            }
-
-            var hash = {};
-            angular.forEach(lesson.questionTypes, function (value) {
-                if (value.active === undefined) {
-                    value.active = true;
-                }
-                hash[value.id] = value;
-            });
-
-            //alert(JSON.stringify(hash, null, 4));
-            var qt = angular.copy($scope.questionTypes);
-            angular.forEach(qt, function (value) {
-                var h = hash[value.id];
-                value.active = h !== undefined && h.active;
-            });
-            return qt;
+            return getEntitiesWithActiveValues($scope.questionTypes, lesson.questionTypes);
         };
 
         $scope.getUserLessons = function (user) {
@@ -265,39 +245,52 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         };
 
         $scope.getUserLessonsById = function (id) {
-            $scope.userLessons = undefined;
-
             $http.get("/lessons/user/" + id)
                 .then(function (response) {
                     $scope.userLessons = response.data;
-
-                    var lessons = angular.copy($scope.lessons);
-                    var userLessons = angular.copy($scope.userLessons);
-
-                    var hash = {};
-                    angular.forEach(userLessons, function (value) {
-                        hash[value.id] = value;
-                    });
-
-                    angular.forEach(lessons, function (value) {
-                        value.active = hash[value.id] !== undefined;
-                    });
-                    $scope.allUserLessons = lessons;
+                    $scope.userLessons = getEntitiesWithActiveValues($scope.lessons, $scope.userLessons);
                 });
         };
 
-        $scope.currentUserChanged = function (user) {
-            $scope.currentUser = user;
-            $scope.getUserLessons($scope.currentUser);
+        var getEntitiesWithActiveValues = function (commonEntities, activeEntities) {
+            var ce = angular.copy(commonEntities);
+            var ae = angular.copy(activeEntities);
+
+            if (ae === undefined || ae === null) {
+                return angular.copy(ce);
+            }
+
+            var hash = {};
+            angular.forEach(ae, function (value) {
+                if (value.active === undefined) {
+                    value.active = true;
+                }
+                hash[value.id] = value;
+            });
+
+            angular.forEach(ce, function (value) {
+                var h = hash[value.id];
+                value.active = h !== undefined && h.active;
+            });
+            return ce;
+        };
+
+        var getOnlyActiveEntities = function (entities) {
+            var e = angular.copy(entities);
+
+            if (e) {
+                for (var i = e.length - 1; i >= 0; i--) {
+                    if (!e[i].active) {
+                        e.splice(i, 1);
+                    }
+                }
+            }
+
+            return e;
         };
 
         $scope.saveUserLessons = function (userId, userLessons) {
-            var ul = angular.copy(userLessons);
-            for (var i = ul.length - 1; i >= 0; i--) {
-                if (!ul[i].active) {
-                    ul.splice(i, 1);
-                }
-            }
+            var ul = getOnlyActiveEntities(userLessons);
 
             $http.post("/lessons/user/" + userId, ul)
                 .then(function (response) {

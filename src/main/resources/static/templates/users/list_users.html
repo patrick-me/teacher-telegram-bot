@@ -1,0 +1,12 @@
+<br>
+<div style="height: 400px; overflow-y: scroll;">
+    <div class="list-group-item" ng-repeat="entity in users | orderBy: 'lastName' | orderBy: 'firstName'">
+        <div class="row">
+            <div class="col-md-1"><i>{{ entity.id }}</i></div>
+            <div class="col-md-2"><i>{{ entity.telegramId }}</i></div>
+            <div class="col-md-2"><i>{{ entity.nickName }}</i></div>
+            <div class="col-md-3">{{ entity.firstName + ' ' + entity.lastName}}</div>
+            <div class="col-md-4">{{ entity.lastLogin | date:'medium' }}</div>
+        </div>
+    </div>
+</div>

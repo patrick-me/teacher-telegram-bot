@@ -1,0 +1,21 @@
+<div ng-if="userAlert" class="alert alert-warning" role="alert">
+    {{ userAlert }}
+</div>
+
+<h4 ng-init="$root.currentUserTemplate = 'templates/users/list_users.html'" style="padding: 16px 0px 16px 0px">
+    Пользователи</h4>
+
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentUserTemplate = 'templates/users/list_users.html'">Список пользователей
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentUserTemplate = 'templates/users/modify_user.html'">Изменить пользователя
+    </button>
+</div>
+
+<br>
+
+<div id="user_content">
+    <div ng-include="$root.currentUserTemplate"></div>
+</div>

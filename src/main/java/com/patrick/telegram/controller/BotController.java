@@ -29,5 +29,6 @@ public class BotController {
     @PostMapping
     public void saveBot(@RequestBody Bot bot) {
         botService.saveBot(bot);
+        botService.disconnect(bot);
     }
 }

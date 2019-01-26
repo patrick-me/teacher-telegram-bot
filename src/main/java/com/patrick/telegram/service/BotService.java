@@ -135,16 +135,19 @@ public class BotService {
     }
 
     public void disconnectAll() {
-        BotSession botSession;
         for (Bot bot : getBots()) {
-            botSession = sessions.get(bot.getId());
-            if (botSession != null && botSession.isRunning()) {
-                botSession.stop();
-                sessions.remove(bot.getId());
-            }
-            bot.setStatus(Bot.Status.DISCONNECTED);
-            saveBot(bot);
-            log.info("Bot {} is disconnected", bot.getName());
+            disconnect(bot);
         }
+    }
+
+    public void disconnect(Bot bot) {
+        BotSession botSession = sessions.get(bot.getId());
+        if (botSession != null && botSession.isRunning()) {
+            botSession.stop();
+            sessions.remove(bot.getId());
+        }
+        bot.setStatus(Bot.Status.DISCONNECTED);
+        saveBot(bot);
+        log.info("Bot {} is disconnected", bot.getName());
     }
 }
