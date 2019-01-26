@@ -1,0 +1,19 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.name for entity in bots">
+        <option disabled="disabled" value="">Выберите бота</option>
+    </select>
+
+    <div ng-if="currentEntity">
+
+        <input type="text" class="form-control" ng-model="currentEntity.name" placeholder="Name" readonly>
+        <input type="text" class="form-control" ng-model="currentEntity.token" placeholder="Token">
+
+        <button type="button" class="btn btn-success float-right"
+                ng-click="saveBot(currentEntity); $root.currentBotTemplate = 'templates/bots/list_bots.html'">
+            Сохранить
+        </button>
+
+    </div>
+</div>

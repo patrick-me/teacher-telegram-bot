@@ -1,0 +1,22 @@
+<div ng-if="botAlert" class="alert alert-warning" role="alert">
+    {{ botAlert }}
+</div>
+
+<h4 ng-init="$root.currentBotTemplate = 'templates/bots/list_bots.html'" style="padding: 16px 0px 16px 0px">
+    Боты
+</h4>
+
+<div class="btn-group" role="group" aria-label="">
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentBotTemplate = 'templates/bots/list_bots.html'">Список ботов
+    </button>
+    <button type="button" class="btn btn-secondary"
+            ng-click="$root.currentBotTemplate = 'templates/bots/modify_bot.html'">Изменить бота
+    </button>
+</div>
+
+<br>
+
+<div id="bot_content">
+    <div ng-include="$root.currentBotTemplate"></div>
+</div>

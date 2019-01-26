@@ -27,7 +27,7 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
             .when("/questionTypes", {templateUrl: 'templates/questionTypes.html'})
             .when("/sentences", {templateUrl: 'templates/sentences/sentences.html'})
             .when("/users", {templateUrl: 'templates/users/users.html'})
-            .when("/bots", {templateUrl: 'templates/bots.html'})
+            .when("/bots", {templateUrl: 'templates/bots/bots.html'})
             .when("/pandas", {templateUrl: 'templates/pandas/pandas.html'})
             .when("/configs", {templateUrl: 'templates/configs/configs.html'})
             .otherwise({templateUrl: 'templates/lessons/lessons.html'});
@@ -43,12 +43,14 @@ angular.module('bot-app', ['angular.filter', 'ngRoute'])
         $scope.lessonAlert = "";
         $scope.configAlert = "";
         $scope.userAlert = "";
+        $scope.botAlert = "";
 
         $scope.currentPandaTemplate = '';
         $scope.currentSentenceTemplate = '';
         $scope.currentLessonTemplate = '';
         $scope.currentConfigTemplate = '';
         $scope.currentUserTemplate = '';
+        $scope.currentBotTemplate = '';
 
 
         $scope.alphaLengthComparator = function (v1, v2) {
