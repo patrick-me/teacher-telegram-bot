@@ -1,0 +1,34 @@
+<br>
+<div>
+    <select class="form-control" ng-model="currentEntity"
+            ng-options="entity as entity.lastName + ' ' + entity.firstName for entity in users | orderBy: 'lastName' | orderBy: 'firstName'"
+            ng-change="getUserLessons(currentEntity)">
+        <option disabled="disabled" value="">Выберите пользователя</option>
+    </select>
+
+    <div ng-if="currentEntity">
+        <div class="row">
+            <div class="col-md-2"><i>{{ entity.nickName }}</i></div>
+            <div class="col-md-4">{{ entity.firstName + ' ' + entity.lastName}}</div>
+        </div>
+
+        <br>
+
+        <div style="height: 400px; overflow-y: scroll;">
+            <br>
+            <div class="list-group-item"
+                 ng-repeat="entity in userLessons | orderBy: 'name' : false : alphaLengthComparator">
+                <div class="row">
+                    <div class="col-md-1"><input type="checkbox" ng-model="entity.active"/></div>
+                    <div class="col-md-5">{{ entity.name }}</div>
+                    <div class="col-md-6"><i>{{ entity.description }}</i></div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-success float-right"
+                ng-click="saveUserLessons(currentEntity.id, userLessons); $root.currentUserTemplate = 'templates/users/list_users.html'">
+            Сохранить
+        </button>
+    </div>
+</div>
