@@ -6,8 +6,9 @@
             <div class="col-md-3">{{ entity.name }}</div>
             <div class="col-md-6"><i>{{ entity.description }}</i></div>
             <div class="col-md-2">
-                <button class="btn btn-info btn-sm float-right" ng-init="foundSentences = findSentences(entity)"
-                        ng-click="selected = !selected">Предложения ({{ foundSentences.length }})
+                <button class="btn btn-info btn-sm float-right"
+                        ng-click="selected = !selected; foundSentences = findSentences(entity)">
+                    Предложения {{ foundSentences ? '(' + foundSentences.length + ')' : ''}}
                 </button>
             </div>
             <div class="col-md-1">
