@@ -30,12 +30,18 @@ public class RouteService {
     public static final String CHECK_QUESTION = "Проверить вопрос";
 
     private static final String LESSONS_CMD = "Уроки";
+
+    private static final String START_LESSON = "Начать урок";
+    private static final String LESSON_STAT_CMD = "Статистика урока";
+    private static final String BACK_TO_LESSONS_CMD = "К урокам";
+
     private static final String FAQ = "FAQ";
 
 
     private final BotService botService;
     private final UserService userService;
     private final LessonService lessonService;
+    private final SentenceService sentenceService;
     private final QuestionService questionService;
     private final UserSessionService userSessionService;
     private final PandaService pandaService;
@@ -43,9 +49,10 @@ public class RouteService {
     private final MessageService messageService;
 
     @Autowired
-    public RouteService(BotService botService, UserService userService, LessonService lessonService,
+    public RouteService(SentenceService sentenceService, BotService botService, UserService userService, LessonService lessonService,
                         QuestionService questionService, UserSessionService userSessionService,
                         PandaService pandaService, ConfigService configService, MessageService messageService) {
+        this.sentenceService = sentenceService;
         this.botService = botService;
         this.userService = userService;
         this.lessonService = lessonService;
@@ -97,16 +104,24 @@ public class RouteService {
         /* User has studied an active lesson */
         if (userSession != null) {
             switch (newMessage) {
+                case START_LESSON:
+                    /* User has started a lesson */
+                    userSession.finishSession();
+                    processChosenLesson(user, chatId, botId, userSession, true);
+                    break;
+                case NEXT_QUESTION:
+                    userSession.finishSession();
+                    processChosenLesson(user, chatId, botId, userSession, false);
+                    break;
+                case LESSON_STAT_CMD:
+                    sendMessage(botId, chatId, getStats(userSession));
+                    break;
                 case FINISH_LESSON:
                     userSession.finishSession();
                     sendMessage(botId, chatId,
                             configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
                             getStartKeyBoard()
                     );
-                    break;
-                case NEXT_QUESTION:
-                    userSession.finishSession();
-                    processChosenLesson(user, chatId, botId, lessonService.getLesson(userSession.getLessonId()), false);
                     break;
                 case CHECK_QUESTION:
                     String correctDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При верном ответе)", "Великолепно!");
@@ -122,6 +137,13 @@ public class RouteService {
                     sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
                     sendPanda(botId, chatId, user.getId(), userSession);
                     break;
+                case BACK_TO_LESSONS_CMD:
+                    userSession.finishSession();
+                    sendMessage(botId, chatId,
+                            configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
+                            getLessonsKeyBoard(user.getId())
+                    );
+                    break;
                 default:
                     userSession.process(newMessage);
                     sendMessage(
@@ -131,9 +153,11 @@ public class RouteService {
             }
             userSessionService.save(userSession);
 
-        } else if (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) {
-            /* User has started a lesson */
-            processChosenLesson(user, chatId, botId, lessonService.getUserLessonByName(user.getId(), newMessage), true);
+        } else if (
+                (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) ||
+                        (BACK_TO_LESSONS_CMD.equals(userLastMessage) && !BACK_TO_LESSONS_CMD.equals(newMessage))
+        ) {
+            processOpenLesson(user, chatId, botId, newMessage);
         } else {
             /* First user access or after finish lesson */
             switch (newMessage) {
@@ -141,7 +165,7 @@ public class RouteService {
                     if (hasLessons(user.getId())) {
                         sendMessage(botId, chatId,
                                 configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
-                                getLessonKeyBoard(user.getId())
+                                getLessonsKeyBoard(user.getId())
                         );
                         break;
                     }
@@ -167,7 +191,47 @@ public class RouteService {
         userService.saveUser(user);
     }
 
-    private void processChosenLesson(User user, Long chatId, int botId, Optional<Lesson> oLesson, boolean sendDesc) {
+    private String getStats(UserSession userSession) {
+
+        int lessonId = userSession.getLessonId();
+        int userId = userSession.getUserId();
+        Optional<Lesson> oLesson = lessonService.getLesson(lessonId);
+
+        if (!oLesson.isPresent()) {
+            return "No lesson: no statistic";
+        }
+
+        Lesson lesson = oLesson.get();
+        Collection<Sentence> sentences = sentenceService.getSentences(lessonId);
+        Collection<Question> questions = questionService.getQuestions(lessonId);
+        Collection<Question> userSuccessfulAnsweredQuestions = questionService.getSuccessfulAnsweredQuestions(userId, lessonId);
+
+        String ln = System.lineSeparator();
+        StringBuilder statistic = new StringBuilder("Статистика урока: *'" + lesson.getName() + "'*" +ln);
+        statistic.append("Кол-во предложений: *" + sentences.size() + "*" + ln);
+        statistic.append("Кол-во вопросов: *" + questions.size() + "*" + ln);
+        statistic.append(
+                "Кол-во правильно отвеченных вопросов: *" +
+                        userSuccessfulAnsweredQuestions.size() + "/" + questions.size() + "*" + ln
+        );
+        return statistic.toString();
+    }
+
+    private void processOpenLesson(User user, Long chatId, int botId, String lessonName) {
+        Optional<Lesson> oLesson = lessonService.getUserLessonByName(user.getId(), lessonName);
+        if (!oLesson.isPresent()) {
+            return;
+        }
+
+        Lesson lesson = oLesson.get();
+        //Stub session to remember opened lesson
+        UserSession userSession = new UserSession(user, questionService.getQuestionStub(), lesson);
+        userSessionService.save(userSession);
+        sendMessage(botId, chatId, configService.getCommandDescription("Выбран урок", "Хороший выбор!"), getLessonKeyBoard());
+    }
+
+    private void processChosenLesson(User user, Long chatId, int botId, UserSession currentUserSession, boolean sendDesc) {
+        Optional<Lesson> oLesson = lessonService.getLesson(currentUserSession.getLessonId());
         if (!oLesson.isPresent()) {
             return;
         }
@@ -287,7 +351,7 @@ public class RouteService {
         return !lessonService.getUserLessons(userId).isEmpty();
     }
 
-    private List<String> getLessonKeyBoard(int userId) {
+    private List<String> getLessonsKeyBoard(int userId) {
         return lessonService.getUserLessons(userId).stream()
                 .map(Lesson::getName)
                 .collect(Collectors.toList());
@@ -298,10 +362,14 @@ public class RouteService {
     }
 
     private List<String> getFinishKeyBoard() {
-        return Arrays.asList(NEXT_QUESTION, FINISH_LESSON);
+        return Arrays.asList(NEXT_QUESTION, LESSON_STAT_CMD, FINISH_LESSON);
     }
 
     private List<String> getStartKeyBoard() {
         return Arrays.asList(LESSONS_CMD, FAQ);
+    }
+
+    private List<String> getLessonKeyBoard() {
+        return Arrays.asList(START_LESSON, LESSON_STAT_CMD, BACK_TO_LESSONS_CMD);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import javax.transaction.Transactional;
+import java.util.Collection;
 
 /**
  * Created by Patrick on 11.02.2018.
@@ -41,4 +42,18 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     @Modifying()
     @Query(value = "delete from question where sentence_id = :s_id", nativeQuery = true)
     void deleteBySentenceId(@Param("s_id") int id);
+
+    @Query(value = "select * from question where question = 'stub' limit 1", nativeQuery = true)
+    Question getQuestionStub();
+
+    @Query(value = "select q.* from question q" +
+            "  join question_type qt on qt.id = q.question_type_id" +
+            "  join lesson_question_types lqt on lqt.question_types_id = qt.id and lqt.lesson_id = :lessonId", nativeQuery = true)
+    Collection<Question> getQuestions(@Param("lessonId") int lessonId);
+
+    @Query(value = "select distinct q.* from question q" +
+            "  join question_type qt on qt.id = q.question_type_id" +
+            "  join lesson_question_types lqt on lqt.question_types_id = qt.id and lqt.lesson_id = :lessonId" +
+            "  join user_session us on q.id = us.question_id and us.user_id = :userId and us.correct = 't'", nativeQuery = true)
+    Collection<Question> getSuccessfulAnsweredQuestions(@Param("userId") int userId, @Param("lessonId") int lessonId);
 }

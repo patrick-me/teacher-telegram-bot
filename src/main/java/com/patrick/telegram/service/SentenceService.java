@@ -62,4 +62,8 @@ public class SentenceService {
         questionRepository.deleteBySentenceId(id);
         sentenceRepository.deleteSentence(id);
     }
+
+    public Collection<Sentence> getSentences(int lessonId) {
+        return sentenceRepository.getSentences(lessonId);
+    }
 }
