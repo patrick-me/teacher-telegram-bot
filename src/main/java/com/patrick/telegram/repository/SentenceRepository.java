@@ -19,7 +19,7 @@ public interface SentenceRepository extends JpaRepository<Sentence, Integer> {
     @Query(value = "delete from sentence where id = :s_id", nativeQuery = true)
     void deleteSentence(@Param("s_id") int id);
 
-    @Query(value = "select s.* from question q" +
+    @Query(value = "select distinct s.* from question q" +
             "  join question_type qt on qt.id = q.question_type_id" +
             "  join lesson_question_types lqt on lqt.question_types_id = qt.id and lqt.lesson_id = :lessonId" +
             "  join sentence s on s.id = q.sentence_id", nativeQuery = true)
