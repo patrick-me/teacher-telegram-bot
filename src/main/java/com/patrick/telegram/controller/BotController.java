@@ -11,7 +11,7 @@ import java.util.Collection;
  * Created by Patrick on 17.03.2018.
  */
 
-@RestController()
+@TESTRestController()
 @RequestMapping("/bots")
 public class BotController {
     private final BotService botService;
