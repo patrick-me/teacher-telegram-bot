@@ -20,8 +20,8 @@ public class UserSessionService {
     }
 
 
-    public UserSession getActiveSession(int userId) {
-        return userSessionRepository.findOneByUserId(userId);
+    public Optional<UserSession> getActiveSession(int userId) {
+        return Optional.ofNullable(userSessionRepository.findOneByUserId(userId));
     }
 
     public void save(UserSession userSession) {

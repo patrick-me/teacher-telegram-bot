@@ -87,13 +87,13 @@ public class UserSession {
     }
 
     public void process(String chosenButton) {
-        if (RouteService.CHECK_QUESTION.equals(chosenButton)) {
+        if (RouteService.CHECK.equals(chosenButton)) {
             finished = true;
             return;
         }
         String delimiter = userQuestion.isEmpty() ? "" : " ";
 
-        if (!userKeyBoard.contains(chosenButton)) {
+        if (userKeyBoard == null || !userKeyBoard.contains(chosenButton)) {
             return;
         }
 

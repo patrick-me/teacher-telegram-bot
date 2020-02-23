@@ -14,8 +14,10 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by Patrick on 07.02.2018.
@@ -57,7 +59,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         updates.forEach(update -> getRouteService().route(ID, update));
     }
 
-    public <T extends BotApiMethod<Message>> void send(T message) {
+    /*public <T extends BotApiMethod<?>> Optional<Message> send(T message) {
+        try {
+            return Optional.ofNullable(execute(message));
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }*/
+
+    public void send(SendPhoto message) {
         try {
             execute(message);
         } catch (TelegramApiException e) {
@@ -65,11 +76,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public void send(SendPhoto message) {
+    public <T extends Serializable, Method extends BotApiMethod<T>> Optional<T> send(Method message) {
         try {
-            execute(message);
+            return Optional.ofNullable(sendApiMethod(message));
         } catch (TelegramApiException e) {
             e.printStackTrace();
+            return Optional.empty();
         }
     }
 

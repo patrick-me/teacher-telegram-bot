@@ -6,14 +6,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
+import org.telegram.telegrambots.meta.api.methods.GetUserProfilePhotos;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.MessageEntity;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.UserProfilePhotos;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,9 +33,9 @@ public class RouteService {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private static final String NEXT_QUESTION = "Следующий вопрос";
+    private static final String NEXT_PROBLEM = "Следующее задание";
     private static final String FINISH_LESSON = "Завершить урок";
-    public static final String CHECK_QUESTION = "Проверить вопрос";
+    public static final String CHECK = "Проверить";
 
     private static final String LESSONS_CMD = "Уроки";
 
@@ -80,7 +88,7 @@ public class RouteService {
         if (hasMessage) {
             user = userService.getUser(update.getMessage().getFrom());
 
-            log.info("Processing, User: {}", user.getLastName());
+            log.info("Processing, User: {} {} [{}]", user.getLastName(), user.getFirstName(), user.getNickName());
             if (update.getMessage().hasEntities()) {
                 processCommands(botId, update.getMessage().getChatId(), update.getMessage().getEntities(), user);
             } else if (update.getMessage().hasText()) {
@@ -96,20 +104,21 @@ public class RouteService {
     }
 
     private void processCommand(int botId, Long chatId, String newMessage, User user) {
-        UserSession userSession = userSessionService.getActiveSession(user.getId());
+        Optional<UserSession> oUserSession = userSessionService.getActiveSession(user.getId());
         String userLastMessage = messageService.getLastMessage(user.getId());
-
+        //findUserPhotos(botId, user.getTelegramId());
         //TODO: new method
         log.info("Processing, LastMessage: {}, NewMessage: {}", userLastMessage, newMessage);
         /* User has studied an active lesson */
-        if (userSession != null) {
+        if (oUserSession.isPresent()) {
+            UserSession userSession = oUserSession.get();
             switch (newMessage) {
                 case START_LESSON:
                     /* User has started a lesson */
                     userSession.finishSession();
                     processChosenLesson(user, chatId, botId, userSession, true);
                     break;
-                case NEXT_QUESTION:
+                case NEXT_PROBLEM:
                     userSession.finishSession();
                     processChosenLesson(user, chatId, botId, userSession, false);
                     break;
@@ -123,11 +132,11 @@ public class RouteService {
                             getStartKeyBoard()
                     );
                     break;
-                case CHECK_QUESTION:
-                    String correctDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При верном ответе)", "Великолепно!");
-                    String incorrectDesc = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе)", "Нужно подучиться, в другой раз точно повезет!");
-                    String incorrectDesc1 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом правильного ответа", "Вот как надо было:");
-                    String incorrectDesc2 = configService.getCommandDescription(CHECK_QUESTION + " " + "(При неверном ответе) - перед выводом введенного ответа", "А вот так не надо:");
+                case CHECK:
+                    String correctDesc = configService.getCommandDescription(CHECK + " " + "(При верном ответе)", "Великолепно!");
+                    String incorrectDesc = configService.getCommandDescription(CHECK + " " + "(При неверном ответе)", "Нужно подучиться, в другой раз точно повезет!");
+                    String incorrectDesc1 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом правильного ответа", "Вот как надо было:");
+                    String incorrectDesc2 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом введенного ответа", "А вот так не надо:");
 
                     String checkMessage = (userSession.isCorrect()) ? correctDesc :
                             incorrectDesc + "\n" +
@@ -207,13 +216,12 @@ public class RouteService {
         Collection<Question> userSuccessfulAnsweredQuestions = questionService.getSuccessfulAnsweredQuestions(userId, lessonId);
 
         String ln = System.lineSeparator();
-        StringBuilder statistic = new StringBuilder("Статистика урока: *'" + lesson.getName() + "'*" +ln);
-        statistic.append("Кол-во предложений: *" + sentences.size() + "*" + ln);
-        statistic.append("Кол-во вопросов: *" + questions.size() + "*" + ln);
-        statistic.append(
-                "Кол-во правильно отвеченных вопросов: *" +
-                        userSuccessfulAnsweredQuestions.size() + "/" + questions.size() + "*" + ln
-        );
+        StringBuilder statistic = new StringBuilder("Статистика урока: *'" + lesson.getName() + "'*" + ln);
+        statistic.append("Кол-во предложений: *").append(sentences.size()).append("*").append(ln);
+        statistic.append("Кол-во заданий: *").append(questions.size()).append("*").append(ln);
+        statistic.append("Кол-во правильно решенных заданий: *")
+                .append(userSuccessfulAnsweredQuestions.size()).append("/").append(questions.size())
+                .append("*").append(ln);
         return statistic.toString();
     }
 
@@ -275,6 +283,37 @@ public class RouteService {
             message.setReplyMarkup(replyKeyboard);
         }
         botService.send(botId, message);
+    }
+
+    private void findUserPhotos(int botId, int telegramUserId) {
+        GetUserProfilePhotos userProfilePhotos = new GetUserProfilePhotos();
+        userProfilePhotos = userProfilePhotos.setUserId(telegramUserId).setOffset(0).setLimit(10);
+
+        String token = botService.getBotToken(botId);
+        Optional<UserProfilePhotos> send = botService.send(botId, userProfilePhotos);
+        System.out.println(send);
+        send.ifPresent(p -> {
+            GetFile file = new GetFile().setFileId(p.getPhotos().get(0).get(0).getFileId());
+            Optional<File> f = botService.send(botId, file);
+            f.ifPresent(q -> {
+                        System.out.println(q.getFileUrl(token));
+                        URL url = null;
+                        try {
+                            url = new URL(q.getFileUrl(token));
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        }
+                        try {
+                            BufferedInputStream bis = new BufferedInputStream(url.openConnection().getInputStream());
+                            byte[] bytes = org.apache.commons.io.IOUtils.toByteArray(bis);
+                            Base64.getEncoder().encode(bytes);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+            );
+
+        });
     }
 
     private void sendPanda(int botId, long chatId, int userId, UserSession userSession) {
@@ -358,11 +397,11 @@ public class RouteService {
     }
 
     private List<String> getCheckKeyBoard() {
-        return Arrays.asList(CHECK_QUESTION, FINISH_LESSON);
+        return Arrays.asList(CHECK, FINISH_LESSON);
     }
 
     private List<String> getFinishKeyBoard() {
-        return Arrays.asList(NEXT_QUESTION, LESSON_STAT_CMD, FINISH_LESSON);
+        return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, FINISH_LESSON);
     }
 
     private List<String> getStartKeyBoard() {
