@@ -18,10 +18,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.BotSession;
 
 import javax.transaction.Transactional;
+import java.io.Serializable;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -89,11 +91,12 @@ public class BotService {
         return botOptions;
     }
 
-    public <T extends BotApiMethod<Message>> void send(int id, T message) {
+    public <T extends Serializable, Method extends BotApiMethod<T>> Optional<T> send(int id, Method message) {
         TelegramBot tb = telegramBotMap.get(id);
         if (tb != null) {
-            tb.send(message);
+            return tb.send(message);
         }
+        return Optional.empty();
     }
 
     public void send(int id, SendPhoto message) {
@@ -113,6 +116,10 @@ public class BotService {
             throw new RuntimeException("Bot is not found by id: " + id);
         }
         return bot;
+    }
+
+    public String getBotToken(int id) {
+        return telegramBotMap.get(id).getBotToken();
     }
 
     public void saveBot(Bot bot) {
