@@ -229,7 +229,9 @@ public class RouteService {
                     );
                     break;
                 case SUPPORT_USERS_CMD:
-                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
+                    if (user.isAdmin()) {
+                        sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
+                    }
                     break;
                 case FAQ:
                     sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
