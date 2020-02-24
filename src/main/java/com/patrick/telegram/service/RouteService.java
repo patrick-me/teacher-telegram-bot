@@ -38,7 +38,7 @@ public class RouteService {
 
     private static final String NEXT_PROBLEM = "Следующее задание";
     private static final String FINISH_LESSON = "Завершить урок";
-    public static final String CHECK = "Проверить";
+    private static final String CHECK = "Проверить";
 
     private static final String LESSONS_CMD = "Уроки";
 
@@ -47,6 +47,8 @@ public class RouteService {
     private static final String BACK_TO_LESSONS_CMD = "К урокам";
 
     private static final String FAQ = "FAQ";
+
+    private static final String SUPPORT_USERS_CMD = "/users";
 
     private static final List<String> REACTIONS_ON_CORRECT_ANSWER = ImmutableList.of(
             "Великолепно!", "Просто супер!", "Правильно!", "В яблочко!", "И это верно!",
@@ -142,7 +144,7 @@ public class RouteService {
                     userSession.finishSession();
                     sendMessage(botId, chatId,
                             configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
-                            getStartKeyBoard()
+                            getStartKeyBoard(user)
                     );
                     break;
                 case CHECK:
@@ -199,6 +201,12 @@ public class RouteService {
             String lessonName = newMessage.contains("\n") ? newMessage.split("\n")[0] : newMessage;
             log.info("Opening lesson: '{}'", lessonName);
             processOpenLesson(user, chatId, botId, lessonName);
+        } else if (user.isAdmin() && SUPPORT_USERS_CMD.equals(userLastMessage) && !SUPPORT_USERS_CMD.equals(newMessage)) {
+            //user firstname lastname\nuser_id
+            //chosen user expected - to show stats and lastLogin
+            String chosenUserId = newMessage.split("\n")[1];
+            log.info("UserId: '{}'", chosenUserId);
+            processUserSupport(chatId, botId, chosenUserId);
         } else {
             /* First user access or after finish lesson */
             switch (newMessage) {
@@ -217,14 +225,17 @@ public class RouteService {
                                     LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
                                     "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
                             ),
-                            getStartKeyBoard()
+                            getStartKeyBoard(user)
                     );
+                    break;
+                case SUPPORT_USERS_CMD:
+                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
                     break;
                 case FAQ:
                     sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
                     break;
                 default:
-                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard());
+                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard(user));
             }
         }
 
@@ -265,6 +276,23 @@ public class RouteService {
                 .append(userSuccessfulAnsweredQuestions.size()).append("/").append(questions.size())
                 .append("*").append(ln);
         return statistic.toString();
+    }
+
+    private void processUserSupport(Long chatId, int botId, String chosenUserId) {
+        User chosenUser = userService.getUserById(Integer.parseInt(chosenUserId));
+        if (chosenUser == null) {
+            log.error("User is null, chosenUserId: '{}'", chosenUserId);
+            return;
+        }
+
+        StringBuilder userInfo = new StringBuilder();
+        userInfo.append("User: ").append(String.format("%s %s", chosenUser.getFirstName(), chosenUser.getLastName())).append("\n")
+                .append("NickName: ").append(chosenUser.getNickName()).append("\n")
+                .append("Last seen: ").append(chosenUser.getLastLogin()).append("\n")
+                .append("Assigned lessons:\n").append(getLessonsKeyBoard(chosenUser.getId()));
+
+        sendMessage(botId, chatId, userInfo.toString(), getLessonKeyBoard());
+
     }
 
     private void processOpenLesson(User user, Long chatId, int botId, String lessonName) {
@@ -450,6 +478,12 @@ public class RouteService {
         return !lessonService.getUserLessons(userId).isEmpty();
     }
 
+    private List<String> getUsersForKeyBoard() {
+        return userService.getUsers().stream()
+                .map(u -> String.format("%s %s\n%s", u.getFirstName(), u.getLastName(), u.getId()))
+                .collect(Collectors.toList());
+    }
+
     private List<String> getLessonsKeyBoard(int userId) {
         return lessonService.getUserLessons(userId).stream()
                 .map(l -> {
@@ -482,8 +516,12 @@ public class RouteService {
         return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, FINISH_LESSON);
     }
 
-    private List<String> getStartKeyBoard() {
-        return Arrays.asList(LESSONS_CMD, FAQ);
+    private List<String> getStartKeyBoard(User user) {
+        if (user.isAdmin()) {
+            return Arrays.asList(LESSONS_CMD, FAQ);
+        } else {
+            return Arrays.asList(LESSONS_CMD, FAQ, SUPPORT_USERS_CMD);
+        }
     }
 
     private List<String> getLessonKeyBoard() {
