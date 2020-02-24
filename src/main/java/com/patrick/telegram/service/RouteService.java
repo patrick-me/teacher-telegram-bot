@@ -196,7 +196,9 @@ public class RouteService {
                 (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) ||
                         (BACK_TO_LESSONS_CMD.equals(userLastMessage) && !BACK_TO_LESSONS_CMD.equals(newMessage))
         ) {
-            processOpenLesson(user, chatId, botId, newMessage);
+            String lessonName = newMessage.contains("\n") ? newMessage.split("\n")[0] : newMessage;
+            log.info("Opening lesson: '{}'", lessonName);
+            processOpenLesson(user, chatId, botId, lessonName);
         } else {
             /* First user access or after finish lesson */
             switch (newMessage) {
@@ -450,8 +452,26 @@ public class RouteService {
 
     private List<String> getLessonsKeyBoard(int userId) {
         return lessonService.getUserLessons(userId).stream()
-                .map(Lesson::getName)
+                .map(l -> {
+                    String progress = getProgressByLesson(userId, l);
+                    return l.getName() + progress;
+                })
                 .collect(Collectors.toList());
+    }
+
+    private String getProgressByLesson(int userId, Lesson l) {
+        String progress = "";
+        Collection<Question> questions = questionService.getQuestions(l.getId());
+        Collection<Question> successfulAnsweredQuestions = questionService.getSuccessfulAnsweredQuestions(
+                userId, l.getId());
+        if (questions != null && !questions.isEmpty()
+                && successfulAnsweredQuestions != null && !successfulAnsweredQuestions.isEmpty()) {
+            int percent = 100 * successfulAnsweredQuestions.size() / questions.size();
+            if (percent > 0) {
+                progress = "\n" + percent + "%";
+            }
+        }
+        return progress;
     }
 
     private List<String> getCheckKeyBoard() {
