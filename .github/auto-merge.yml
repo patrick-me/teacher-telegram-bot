@@ -1,0 +1,1 @@
+requiredBodyRegex: '(^|\\s)/merge($|\\s)'
