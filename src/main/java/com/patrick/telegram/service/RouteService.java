@@ -206,7 +206,7 @@ public class RouteService {
             //chosen user expected - to show stats and lastLogin
             String chosenUserId = newMessage.split("\n")[1];
             log.info("UserId: '{}'", chosenUserId);
-            processUserSupport(chatId, botId, chosenUserId);
+            processUserSupport(user, chatId, botId, chosenUserId);
         } else {
             /* First user access or after finish lesson */
             switch (newMessage) {
@@ -278,7 +278,7 @@ public class RouteService {
         return statistic.toString();
     }
 
-    private void processUserSupport(Long chatId, int botId, String chosenUserId) {
+    private void processUserSupport(User user, Long chatId, int botId, String chosenUserId) {
         User chosenUser = userService.getUserById(Integer.parseInt(chosenUserId));
         if (chosenUser == null) {
             log.error("User is null, chosenUserId: '{}'", chosenUserId);
@@ -286,12 +286,17 @@ public class RouteService {
         }
 
         StringBuilder userInfo = new StringBuilder();
+        String userLessonsWithProgress = getLessonsKeyBoard(chosenUser.getId()).stream()
+                .sorted()
+                .map(l -> l.replace("\n", " - "))
+                .collect(Collectors.joining("\n"));
+
         userInfo.append("User: ").append(String.format("%s %s", chosenUser.getFirstName(), chosenUser.getLastName())).append("\n")
                 .append("NickName: ").append(chosenUser.getNickName()).append("\n")
                 .append("Last seen: ").append(chosenUser.getLastLogin()).append("\n")
-                .append("Assigned lessons:\n").append(getLessonsKeyBoard(chosenUser.getId()));
+                .append("Assigned lessons:\n").append(userLessonsWithProgress);
 
-        sendMessage(botId, chatId, userInfo.toString(), getLessonKeyBoard());
+        sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(user), Collections.emptyList());
 
     }
 
@@ -321,7 +326,7 @@ public class RouteService {
         if (sendDesc) {
             sendMessage(botId, chatId, lesson.getDescription());
         }
-        sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(),
+        sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
     }
 
@@ -330,10 +335,12 @@ public class RouteService {
     }
 
     private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons) {
-        return sendMessage(botId, chatId, text, keyBoardButtons, Collections.emptyList());
+        return sendMessage(botId, chatId, text, true, keyBoardButtons, Collections.emptyList());
     }
 
-    private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
+    private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text,
+                                                                                     boolean enableMarkdown,
+                                                                                     List<String> keyBoardButtons,
                                                                                      List<String> keyBoardControlButtons) {
 
         //TODO: check * and _ markdown
@@ -341,7 +348,7 @@ public class RouteService {
         SendMessage message = new SendMessage()
                 .setChatId(chatId)
                 .setText(text)
-                .enableMarkdown(true);
+                .enableMarkdown(enableMarkdown);
 
         if (StringUtils.isEmpty(text)) {
             message.setText("EMPTY TEXT - CHANGE ME");
@@ -518,9 +525,9 @@ public class RouteService {
 
     private List<String> getStartKeyBoard(User user) {
         if (user.isAdmin()) {
-            return Arrays.asList(LESSONS_CMD, FAQ);
-        } else {
             return Arrays.asList(LESSONS_CMD, FAQ, SUPPORT_USERS_CMD);
+        } else {
+            return Arrays.asList(LESSONS_CMD, FAQ);
         }
     }
 
