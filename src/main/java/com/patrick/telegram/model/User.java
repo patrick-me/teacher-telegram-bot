@@ -39,6 +39,8 @@ public class User implements Serializable {
     private int telegramId;
     @Column(name = "lastLogin")
     private Date lastLogin;
+    @Column(name = "isAdmin", columnDefinition = "boolean default false")
+    private boolean isAdmin;
 
     @BatchSize(size = 25)
     @ManyToMany
@@ -91,6 +93,10 @@ public class User implements Serializable {
         this.lessons = lessons;
     }
 
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -100,6 +106,8 @@ public class User implements Serializable {
                 ", nickName='" + nickName + '\'' +
                 ", telegramId=" + telegramId +
                 ", lastLogin=" + lastLogin +
+                ", isAdmin=" + isAdmin +
+                ", lessons=" + lessons +
                 '}';
     }
 }

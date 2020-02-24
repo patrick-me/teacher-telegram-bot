@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 /**
  * Created by Patrick on 17.03.2018.
@@ -24,7 +26,10 @@ public class UserService {
     }
 
     public Collection<User> getUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(User::getLastLogin))
+                .collect(Collectors.toList());
     }
 
     public User getUser(org.telegram.telegrambots.meta.api.objects.User telegramUser) {
@@ -40,6 +45,10 @@ public class UserService {
 
     public User getUser(int tid) {
         return userRepository.findOneByTelegramId(tid);
+    }
+
+    public User getUserById(int id) {
+        return userRepository.findOne(id);
     }
 
     public void saveUser(User user) {
