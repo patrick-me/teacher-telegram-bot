@@ -1,5 +1,6 @@
 package com.patrick.telegram.service;
 
+import com.google.common.collect.ImmutableList;
 import com.patrick.telegram.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,8 @@ import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.GetUserProfilePhotos;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.MessageEntity;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -45,6 +48,15 @@ public class RouteService {
 
     private static final String FAQ = "FAQ";
 
+    private static final List<String> REACTIONS_ON_CORRECT_ANSWER = ImmutableList.of(
+            "Великолепно!", "Просто супер!", "Правильно!", "В яблочко!", "И это верно!",
+            "Вы сегодня просто в ударе!", "Красота!", "Perfecto!", "+1", "Верно, продолжайте в том же духе!"
+    );
+    private static final List<String> REACTIONS_ON_FAILED_ANSWER = ImmutableList.of(
+            "В другой раз точно повезет!", "Сделай работу над ошибками!", "Почти получилось...", "Смотри как нужно", "Не правильно",
+            "Панда негодует", "Не расстраивайся", "Плохие новости", "Сегодня не везет", "Старайся лучше"
+    );
+    private Random randomGenerator = new Random();
 
     private final BotService botService;
     private final UserService userService;
@@ -90,20 +102,21 @@ public class RouteService {
 
             log.info("Processing, User: {} {} [{}]", user.getLastName(), user.getFirstName(), user.getNickName());
             if (update.getMessage().hasEntities()) {
-                processCommands(botId, update.getMessage().getChatId(), update.getMessage().getEntities(), user);
+                processCommands(botId, update.getMessage(), update.getMessage().getEntities(), user);
             } else if (update.getMessage().hasText()) {
-                processCommand(botId, update.getMessage().getChatId(), update.getMessage().getText(), user);
+                processCommand(botId, update.getMessage(), update.getMessage().getText(), user);
             }
         }
     }
 
-    private void processCommands(int botId, Long chatId, List<MessageEntity> entities, User user) {
+    private void processCommands(int botId, org.telegram.telegrambots.meta.api.objects.Message message, List<MessageEntity> entities, User user) {
         for (MessageEntity e : entities) {
-            processCommand(botId, chatId, e.getText(), user);
+            processCommand(botId, message, e.getText(), user);
         }
     }
 
-    private void processCommand(int botId, Long chatId, String newMessage, User user) {
+    private void processCommand(int botId, org.telegram.telegrambots.meta.api.objects.Message message, String newMessage, User user) {
+        Long chatId = message.getChatId();
         Optional<UserSession> oUserSession = userSessionService.getActiveSession(user.getId());
         String userLastMessage = messageService.getLastMessage(user.getId());
         //findUserPhotos(botId, user.getTelegramId());
@@ -133,13 +146,18 @@ public class RouteService {
                     );
                     break;
                 case CHECK:
-                    String correctDesc = configService.getCommandDescription(CHECK + " " + "(При верном ответе)", "Великолепно!");
-                    String incorrectDesc = configService.getCommandDescription(CHECK + " " + "(При неверном ответе)", "Нужно подучиться, в другой раз точно повезет!");
-                    String incorrectDesc1 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом правильного ответа", "Вот как надо было:");
-                    String incorrectDesc2 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом введенного ответа", "А вот так не надо:");
+                    String correctDescValue = configService.getCommandDescription(CHECK + " " + "(При верном ответе)", "");
+                    String incorrectDescValue = configService.getCommandDescription(CHECK + " " + "(При неверном ответе)", "");
+                    String incorrectDescValue1 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом правильного ответа", "");
+                    String incorrectDescValue2 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом введенного ответа", "");
+
+                    String correctDesc = "".equals(correctDescValue) ? getDefaultReactionOnCorrectAnswer() : correctDescValue;
+                    String incorrectDesc = "".equals(incorrectDescValue) ? getDefaultReactionOnFailedAnswer() : incorrectDescValue;
+                    String incorrectDesc1 = "".equals(incorrectDescValue1) ? "_Ожидается_:" : incorrectDescValue1;
+                    String incorrectDesc2 = "".equals(incorrectDescValue2) ? "_Ваш ответ_:" : incorrectDescValue2;
 
                     String checkMessage = (userSession.isCorrect()) ? correctDesc :
-                            incorrectDesc + "\n" +
+                            incorrectDesc + "\n\n" +
                                     incorrectDesc1 + " " + userSession.getCorrectQuestion() + "\n" +
                                     incorrectDesc2 + " " + userSession.getUserQuestion();
 
@@ -154,11 +172,23 @@ public class RouteService {
                     );
                     break;
                 default:
-                    userSession.process(newMessage);
-                    sendMessage(
-                            botId, chatId, userSession.getUserQuestion(), userSession.getUserKeyBoardButtons(),
-                            getCheckKeyBoard()
-                    );
+                    boolean successfulProcessed = userSession.process(newMessage);
+
+                    if (userSession.hasBotReplyMessageId()) {
+                        editMessage(botId, chatId, userSession.getBotReplyMessageId(), userSession.getUserQuestion());
+                    } else {
+                        Optional<org.telegram.telegrambots.meta.api.objects.Message> oSentMessage = sendMessage(
+                                botId, chatId, userSession.getUserQuestion()
+                        );
+                        if (oSentMessage.isPresent()) {
+                            org.telegram.telegrambots.meta.api.objects.Message sentMessage = oSentMessage.get();
+                            userSession.setBotReplyMessageId(sentMessage.getMessageId());
+                        }
+                    }
+
+                    if (successfulProcessed) {
+                        deleteMessage(botId, chatId, message.getMessageId());
+                    }
             }
             userSessionService.save(userSession);
 
@@ -200,6 +230,16 @@ public class RouteService {
         userService.saveUser(user);
     }
 
+    private String getDefaultReactionOnFailedAnswer() {
+        int next = randomGenerator.nextInt(REACTIONS_ON_FAILED_ANSWER.size());
+        return REACTIONS_ON_FAILED_ANSWER.get(next);
+    }
+
+    private String getDefaultReactionOnCorrectAnswer() {
+        int next = randomGenerator.nextInt(REACTIONS_ON_CORRECT_ANSWER.size());
+        return REACTIONS_ON_CORRECT_ANSWER.get(next);
+    }
+
     private String getStats(UserSession userSession) {
 
         int lessonId = userSession.getLessonId();
@@ -216,7 +256,7 @@ public class RouteService {
         Collection<Question> userSuccessfulAnsweredQuestions = questionService.getSuccessfulAnsweredQuestions(userId, lessonId);
 
         String ln = System.lineSeparator();
-        StringBuilder statistic = new StringBuilder("Статистика урока: *'" + lesson.getName() + "'*" + ln);
+        StringBuilder statistic = new StringBuilder("Статистика урока: *'" + lesson.getName() + "'*" + ln + ln);
         statistic.append("Кол-во предложений: *").append(sentences.size()).append("*").append(ln);
         statistic.append("Кол-во заданий: *").append(questions.size()).append("*").append(ln);
         statistic.append("Кол-во правильно решенных заданий: *")
@@ -255,16 +295,16 @@ public class RouteService {
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
     }
 
-    private void sendMessage(int botId, long chatId, String text) {
-        sendMessage(botId, chatId, text, Collections.emptyList());
+    private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text) {
+        return sendMessage(botId, chatId, text, Collections.emptyList());
     }
 
-    private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons) {
-        sendMessage(botId, chatId, text, keyBoardButtons, Collections.emptyList());
+    private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons) {
+        return sendMessage(botId, chatId, text, keyBoardButtons, Collections.emptyList());
     }
 
-    private void sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
-                             List<String> keyBoardControlButtons) {
+    private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text, List<String> keyBoardButtons,
+                                                                                     List<String> keyBoardControlButtons) {
 
         //TODO: check * and _ markdown
 
@@ -282,6 +322,24 @@ public class RouteService {
         if (!keyBoardButtons.isEmpty() || !keyBoardControlButtons.isEmpty()) {
             message.setReplyMarkup(replyKeyboard);
         }
+        return botService.send(botId, message);
+    }
+
+    private void editMessage(int botId, long chatId, int messageId, String text) {
+        EditMessageText message = new EditMessageText()
+                .setChatId(chatId)
+                .setMessageId(messageId)
+                .setText(text)
+                .enableMarkdown(true);
+
+        botService.send(botId, message);
+    }
+
+    private void deleteMessage(int botId, long chatId, int messageId) {
+        DeleteMessage message = new DeleteMessage()
+                .setChatId(chatId)
+                .setMessageId(messageId);
+
         botService.send(botId, message);
     }
 

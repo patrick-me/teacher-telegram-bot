@@ -1,7 +1,5 @@
 package com.patrick.telegram.model;
 
-import com.patrick.telegram.service.RouteService;
-
 import javax.persistence.*;
 import java.util.*;
 
@@ -32,6 +30,8 @@ public class UserSession {
     private boolean correct;
     @Column
     private Date startDate;
+    @Column
+    private Integer botReplyMessageId;
 
     public UserSession() {
     }
@@ -86,15 +86,11 @@ public class UserSession {
         return String.join(KEYBOARD_BUTTON_DELIMITER, keyBoard);
     }
 
-    public void process(String chosenButton) {
-        if (RouteService.CHECK.equals(chosenButton)) {
-            finished = true;
-            return;
-        }
+    public boolean process(String chosenButton) {
         String delimiter = userQuestion.isEmpty() ? "" : " ";
 
         if (userKeyBoard == null || !userKeyBoard.contains(chosenButton)) {
-            return;
+            return false;
         }
 
         /* Collecting user input from keyBoard */
@@ -113,6 +109,7 @@ public class UserSession {
         }
 
         userKeyBoard = fromKeyBoard(updatedKeyBoard);
+        return true;
     }
 
     public void finishSession() {
@@ -133,5 +130,17 @@ public class UserSession {
 
     public Date getStartDate() {
         return startDate;
+    }
+
+    public boolean hasBotReplyMessageId() {
+        return null != botReplyMessageId;
+    }
+
+    public Integer getBotReplyMessageId() {
+        return botReplyMessageId;
+    }
+
+    public void setBotReplyMessageId(Integer botReplyMessageId) {
+        this.botReplyMessageId = botReplyMessageId;
     }
 }
