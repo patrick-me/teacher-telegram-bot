@@ -44,6 +44,7 @@ public class RouteService {
 
     private static final String START_LESSON = "Начать урок";
     private static final String LESSON_STAT_CMD = "Статистика урока";
+    private static final String LESSON_DESC_CMD = "Описание урока";
     private static final String BACK_TO_LESSONS_CMD = "К урокам";
 
     private static final String FAQ = "FAQ";
@@ -122,60 +123,111 @@ public class RouteService {
         Optional<UserSession> oUserSession = userSessionService.getActiveSession(user.getId());
         String userLastMessage = messageService.getLastMessage(user.getId());
         //findUserPhotos(botId, user.getTelegramId());
-        //TODO: new method
+
         log.info("Processing, LastMessage: {}, NewMessage: {}", userLastMessage, newMessage);
-        /* User has studied an active lesson */
+
         if (oUserSession.isPresent()) {
-            UserSession userSession = oUserSession.get();
-            switch (newMessage) {
-                case START_LESSON:
-                    /* User has started a lesson */
-                    userSession.finishSession();
-                    processChosenLesson(user, chatId, botId, userSession, true);
-                    break;
-                case NEXT_PROBLEM:
-                    userSession.finishSession();
-                    processChosenLesson(user, chatId, botId, userSession, false);
-                    break;
-                case LESSON_STAT_CMD:
-                    sendMessage(botId, chatId, getStats(userSession));
-                    break;
-                case FINISH_LESSON:
-                    userSession.finishSession();
-                    sendMessage(botId, chatId,
-                            configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
-                            getStartKeyBoard(user)
-                    );
-                    break;
-                case CHECK:
-                    String correctDescValue = configService.getCommandDescription(CHECK + " " + "(При верном ответе)", "");
-                    String incorrectDescValue = configService.getCommandDescription(CHECK + " " + "(При неверном ответе)", "");
-                    String incorrectDescValue1 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом правильного ответа", "");
-                    String incorrectDescValue2 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом введенного ответа", "");
+            /* User has studied an active lesson */
+            processActiveUserSession(botId, message, newMessage, user, chatId, oUserSession.get());
+        } else if (
+                (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) ||
+                        (BACK_TO_LESSONS_CMD.equals(userLastMessage) && !BACK_TO_LESSONS_CMD.equals(newMessage))
+        ) {
+            processOpenLesson(user, chatId, botId, newMessage);
+        } else if (user.isAdmin() && SUPPORT_USERS_CMD.equals(userLastMessage) && !SUPPORT_USERS_CMD.equals(newMessage)) {
+            processUserSupport(user, chatId, botId, newMessage);
+        } else {
+            /* First user access or after finish lesson */
+            processStartOrReturnToStartPoint(botId, newMessage, user, chatId);
+        }
 
-                    String correctDesc = "".equals(correctDescValue) ? getDefaultReactionOnCorrectAnswer() : correctDescValue;
-                    String incorrectDesc = "".equals(incorrectDescValue) ? getDefaultReactionOnFailedAnswer() : incorrectDescValue;
-                    String incorrectDesc1 = "".equals(incorrectDescValue1) ? "_Ожидается_:" : incorrectDescValue1;
-                    String incorrectDesc2 = "".equals(incorrectDescValue2) ? "_Ваш ответ_:" : incorrectDescValue2;
+        messageService.save(newMessage, user.getId());
+        userService.saveUser(user);
+    }
 
-                    String checkMessage = (userSession.isCorrect()) ? correctDesc :
-                            incorrectDesc + "\n\n" +
-                                    incorrectDesc1 + " " + userSession.getCorrectQuestion() + "\n" +
-                                    incorrectDesc2 + " " + userSession.getUserQuestion();
-
-                    sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
-                    sendPanda(botId, chatId, user.getId(), userSession);
-                    break;
-                case BACK_TO_LESSONS_CMD:
-                    userSession.finishSession();
+    private void processStartOrReturnToStartPoint(int botId, String newMessage, User user, Long chatId) {
+        switch (newMessage) {
+            case LESSONS_CMD:
+                if (hasLessons(user.getId())) {
                     sendMessage(botId, chatId,
                             configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
                             getLessonsKeyBoard(user.getId())
                     );
                     break;
-                default:
-                    boolean successfulProcessed = userSession.process(newMessage);
+                }
+                sendMessage(
+                        botId,
+                        chatId,
+                        configService.getCommandDescription(
+                                LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
+                                "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
+                        ),
+                        getStartKeyBoard(user)
+                );
+                break;
+            case SUPPORT_USERS_CMD:
+                if (user.isAdmin()) {
+                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
+                }
+                break;
+            case FAQ:
+                sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
+                break;
+            default:
+                sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard(user));
+        }
+    }
 
+    private void processActiveUserSession(int botId, org.telegram.telegrambots.meta.api.objects.Message message, String newMessage, User user, Long chatId, UserSession userSession) {
+        switch (newMessage) {
+            case START_LESSON:
+            case NEXT_PROBLEM:
+                userSession.finishSession();
+                processChosenLesson(user, chatId, botId, userSession);
+                break;
+            case LESSON_DESC_CMD:
+                sendMessage(botId, chatId, getLessonDesc(userSession));
+                break;
+            case LESSON_STAT_CMD:
+                sendMessage(botId, chatId, getLessonStats(userSession));
+                break;
+            case FINISH_LESSON:
+                userSession.finishSession();
+                sendMessage(botId, chatId,
+                        configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
+                        getStartKeyBoard(user)
+                );
+                break;
+            case CHECK:
+                String correctDescValue = configService.getCommandDescription(CHECK + " " + "(При верном ответе)", "");
+                String incorrectDescValue = configService.getCommandDescription(CHECK + " " + "(При неверном ответе)", "");
+                String incorrectDescValue1 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом правильного ответа", "");
+                String incorrectDescValue2 = configService.getCommandDescription(CHECK + " " + "(При неверном ответе) - перед выводом введенного ответа", "");
+
+                String correctDesc = "".equals(correctDescValue) ? getDefaultReactionOnCorrectAnswer() : correctDescValue;
+                String incorrectDesc = "".equals(incorrectDescValue) ? getDefaultReactionOnFailedAnswer() : incorrectDescValue;
+                String incorrectDesc1 = "".equals(incorrectDescValue1) ? "_Ожидается_:" : incorrectDescValue1;
+                String incorrectDesc2 = "".equals(incorrectDescValue2) ? "_Ваш ответ_:" : incorrectDescValue2;
+
+                String checkMessage = (userSession.isCorrect()) ? correctDesc :
+                        incorrectDesc + "\n\n" +
+                                incorrectDesc1 + " " + userSession.getCorrectQuestion() + "\n" +
+                                incorrectDesc2 + " " + userSession.getUserQuestion();
+
+                sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
+                sendPanda(botId, chatId, user.getId(), userSession);
+                break;
+            case BACK_TO_LESSONS_CMD:
+                userSession.finishSession();
+                sendMessage(botId, chatId,
+                        configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
+                        getLessonsKeyBoard(user.getId())
+                );
+                break;
+            default:
+                boolean successfulProcessed = userSession.process(newMessage);
+
+                if (successfulProcessed) {
                     if (userSession.hasBotReplyMessageId()) {
                         editMessage(botId, chatId, userSession.getBotReplyMessageId(), userSession.getUserQuestion());
                     } else {
@@ -187,62 +239,12 @@ public class RouteService {
                             userSession.setBotReplyMessageId(sentMessage.getMessageId());
                         }
                     }
+                }
 
-                    if (successfulProcessed) {
-                        deleteMessage(botId, chatId, message.getMessageId());
-                    }
-            }
-            userSessionService.save(userSession);
+                deleteMessage(botId, chatId, message.getMessageId());
 
-        } else if (
-                (LESSONS_CMD.equals(userLastMessage) && !LESSONS_CMD.equals(newMessage)) ||
-                        (BACK_TO_LESSONS_CMD.equals(userLastMessage) && !BACK_TO_LESSONS_CMD.equals(newMessage))
-        ) {
-            String lessonName = newMessage.contains("\n") ? newMessage.split("\n")[0] : newMessage;
-            log.info("Opening lesson: '{}'", lessonName);
-            processOpenLesson(user, chatId, botId, lessonName);
-        } else if (user.isAdmin() && SUPPORT_USERS_CMD.equals(userLastMessage) && !SUPPORT_USERS_CMD.equals(newMessage)) {
-            //user firstname lastname\nuser_id
-            //chosen user expected - to show stats and lastLogin
-            String chosenUserId = newMessage.split("\n")[1];
-            log.info("UserId: '{}'", chosenUserId);
-            processUserSupport(user, chatId, botId, chosenUserId);
-        } else {
-            /* First user access or after finish lesson */
-            switch (newMessage) {
-                case LESSONS_CMD:
-                    if (hasLessons(user.getId())) {
-                        sendMessage(botId, chatId,
-                                configService.getCommandDescription(LESSONS_CMD + " (Когда у пользователя есть назначенные уроки)", "Посмотри сколько у тебя уроков!\nДавай учиться!"),
-                                getLessonsKeyBoard(user.getId())
-                        );
-                        break;
-                    }
-                    sendMessage(
-                            botId,
-                            chatId,
-                            configService.getCommandDescription(
-                                    LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
-                                    "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
-                            ),
-                            getStartKeyBoard(user)
-                    );
-                    break;
-                case SUPPORT_USERS_CMD:
-                    if (user.isAdmin()) {
-                        sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
-                    }
-                    break;
-                case FAQ:
-                    sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
-                    break;
-                default:
-                    sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard(user));
-            }
         }
-
-        messageService.save(newMessage, user.getId());
-        userService.saveUser(user);
+        userSessionService.save(userSession);
     }
 
     private String getDefaultReactionOnFailedAnswer() {
@@ -255,7 +257,7 @@ public class RouteService {
         return REACTIONS_ON_CORRECT_ANSWER.get(next);
     }
 
-    private String getStats(UserSession userSession) {
+    private String getLessonStats(UserSession userSession) {
 
         int lessonId = userSession.getLessonId();
         int userId = userSession.getUserId();
@@ -280,7 +282,12 @@ public class RouteService {
         return statistic.toString();
     }
 
-    private void processUserSupport(User user, Long chatId, int botId, String chosenUserId) {
+    //user firstname lastname\nuser_id
+    //chosen user expected - to show stats and lastLogin
+    private void processUserSupport(User user, Long chatId, int botId, String newMessage) {
+        String chosenUserId = newMessage.split("\n")[1];
+        log.info("UserId: '{}'", chosenUserId);
+
         User chosenUser = userService.getUserById(Integer.parseInt(chosenUserId));
         if (chosenUser == null) {
             log.error("User is null, chosenUserId: '{}'", chosenUserId);
@@ -302,7 +309,10 @@ public class RouteService {
 
     }
 
-    private void processOpenLesson(User user, Long chatId, int botId, String lessonName) {
+    private void processOpenLesson(User user, Long chatId, int botId, String newMessage) {
+        String lessonName = newMessage.contains("\n") ? newMessage.split("\n")[0] : newMessage;
+        log.info("Opening lesson: '{}'", lessonName);
+
         Optional<Lesson> oLesson = lessonService.getUserLessonByName(user.getId(), lessonName);
         if (!oLesson.isPresent()) {
             return;
@@ -315,7 +325,7 @@ public class RouteService {
         sendMessage(botId, chatId, configService.getCommandDescription("Выбран урок", "Хороший выбор!"), getLessonKeyBoard());
     }
 
-    private void processChosenLesson(User user, Long chatId, int botId, UserSession currentUserSession, boolean sendDesc) {
+    private void processChosenLesson(User user, Long chatId, int botId, UserSession currentUserSession) {
         Optional<Lesson> oLesson = lessonService.getLesson(currentUserSession.getLessonId());
         if (!oLesson.isPresent()) {
             return;
@@ -325,11 +335,18 @@ public class RouteService {
         UserSession userSession = new UserSession(user, getRandomQuestion(user, lesson), lesson);
         userSessionService.save(userSession);
 
-        if (sendDesc) {
-            sendMessage(botId, chatId, lesson.getDescription());
-        }
         sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
+    }
+
+    private String getLessonDesc(UserSession currentUserSession) {
+        Optional<Lesson> oLesson = lessonService.getLesson(currentUserSession.getLessonId());
+        if (!oLesson.isPresent()) {
+            return "There is no description yet";
+        }
+
+        Lesson lesson = oLesson.get();
+        return lesson.getDescription();
     }
 
     private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text) {
@@ -353,7 +370,7 @@ public class RouteService {
                 .enableMarkdown(enableMarkdown);
 
         if (StringUtils.isEmpty(text)) {
-            message.setText("EMPTY TEXT - CHANGE ME");
+            message.setText("There is no text yet");
         }
 
         ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons);
@@ -522,7 +539,7 @@ public class RouteService {
     }
 
     private List<String> getFinishKeyBoard() {
-        return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, FINISH_LESSON);
+        return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, LESSON_DESC_CMD, FINISH_LESSON);
     }
 
     private List<String> getStartKeyBoard(User user) {
@@ -534,6 +551,6 @@ public class RouteService {
     }
 
     private List<String> getLessonKeyBoard() {
-        return Arrays.asList(START_LESSON, LESSON_STAT_CMD, BACK_TO_LESSONS_CMD);
+        return Arrays.asList(START_LESSON, LESSON_STAT_CMD, LESSON_DESC_CMD, BACK_TO_LESSONS_CMD);
     }
 }
