@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,11 @@ public class RouteService {
             "Панда негодует", "Не расстраивайся", "Плохие новости", "Сегодня не везет", "Старайся лучше"
     );
     private Random randomGenerator = new Random();
+    private static final SimpleDateFormat moscowDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    static {
+        moscowDateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Moscow"));
+    }
 
     private final BotService botService;
     private final UserService userService;
@@ -302,7 +308,7 @@ public class RouteService {
 
         userInfo.append("User: ").append(String.format("%s %s", chosenUser.getFirstName(), chosenUser.getLastName())).append("\n")
                 .append("NickName: ").append(chosenUser.getNickName()).append("\n")
-                .append("Last seen: ").append(chosenUser.getLastLogin()).append("\n")
+                .append("Last seen: ").append(moscowDateFormat.format(chosenUser.getLastLogin())).append("\n")
                 .append("Assigned lessons:\n").append(userLessonsWithProgress);
 
         sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(user), Collections.emptyList());
