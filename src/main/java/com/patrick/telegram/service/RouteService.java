@@ -53,7 +53,7 @@ public class RouteService {
 
     private static final List<String> REACTIONS_ON_CORRECT_ANSWER = ImmutableList.of(
             "Великолепно!", "Просто супер!", "Правильно!", "В яблочко!", "И это верно!",
-            "Вы сегодня просто в ударе!", "Красота!", "Perfecto!", "+1", "Верно, продолжайте в том же духе!"
+            "Вы сегодня просто в ударе!", "Bingo!", "Perfecto!", "+1", "Верно, продолжайте в том же духе!"
     );
     private static final List<String> REACTIONS_ON_FAILED_ANSWER = ImmutableList.of(
             "В другой раз точно повезет!", "Сделай работу над ошибками!", "Почти получилось...", "Смотри как нужно", "Не правильно",
@@ -342,7 +342,7 @@ public class RouteService {
     private String getLessonDesc(UserSession currentUserSession) {
         Optional<Lesson> oLesson = lessonService.getLesson(currentUserSession.getLessonId());
         if (!oLesson.isPresent()) {
-            return "There is no description yet";
+            return "There is no description here yet";
         }
 
         Lesson lesson = oLesson.get();
@@ -370,7 +370,7 @@ public class RouteService {
                 .enableMarkdown(enableMarkdown);
 
         if (StringUtils.isEmpty(text)) {
-            message.setText("There is no text yet");
+            message.setText("There is no text here yet");
         }
 
         ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons);
