@@ -31,7 +31,9 @@ public class LessonService {
     }
 
     public Collection<Lesson> getLessons() {
-        return lessonRepository.findAll();
+        return lessonRepository.findAll().stream()
+                .sorted(Comparator.comparing(Lesson::getName))
+                .collect(Collectors.toList());
     }
 
     public void addLesson(Lesson lesson) {
