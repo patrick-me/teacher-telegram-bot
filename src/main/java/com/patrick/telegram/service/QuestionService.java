@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -46,7 +47,9 @@ public class QuestionService {
     }
 
     public Collection<Question> getQuestions(int lessonId) {
-        return questionRepository.getQuestions(lessonId);
+        Collection<Question> questions = questionRepository.getQuestions(lessonId);
+
+        return questions == null ? Collections.emptyList() : questions;
     }
 
     public Collection<Question> getSuccessfulAnsweredQuestions(int userId, int lessonId) {
