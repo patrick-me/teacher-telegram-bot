@@ -558,8 +558,7 @@ public class RouteService {
         Collection<Question> questions = questionService.getQuestions(l.getId());
         Collection<Question> successfulAnsweredQuestions = questionService.getSuccessfulAnsweredQuestions(
                 userId, l.getId());
-        if (questions != null && !questions.isEmpty()
-                && successfulAnsweredQuestions != null && !successfulAnsweredQuestions.isEmpty()) {
+        if (!questions.isEmpty() && !successfulAnsweredQuestions.isEmpty()) {
             int percent = 100 * successfulAnsweredQuestions.size() / questions.size();
             if (percent > 0) {
                 progress = "\n" + percent + "%";

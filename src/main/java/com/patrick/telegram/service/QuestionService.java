@@ -48,11 +48,11 @@ public class QuestionService {
 
     public Collection<Question> getQuestions(int lessonId) {
         Collection<Question> questions = questionRepository.getQuestions(lessonId);
-
         return questions == null ? Collections.emptyList() : questions;
     }
 
     public Collection<Question> getSuccessfulAnsweredQuestions(int userId, int lessonId) {
-        return questionRepository.getSuccessfulAnsweredQuestions(userId, lessonId);
+        Collection<Question> questions = questionRepository.getSuccessfulAnsweredQuestions(userId, lessonId);
+        return questions == null ? Collections.emptyList() : questions;
     }
 }
