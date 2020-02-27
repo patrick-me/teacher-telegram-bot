@@ -1,5 +1,6 @@
 package com.patrick.telegram.service;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.patrick.telegram.model.*;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public class RouteService {
     private static final String FAQ = "FAQ";
 
     private static final String SUPPORT_USERS_CMD = "/users";
+    private static final String SUPPORT_LESSONS_CMD = "/lessons";
+
 
     private static final List<String> REACTIONS_ON_CORRECT_ANSWER = ImmutableList.of(
             "Великолепно!", "Просто супер!", "Правильно!", "В яблочко!", "И это верно!",
@@ -168,19 +171,27 @@ public class RouteService {
                                 LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
                                 "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
                         ),
-                        getStartKeyBoard(user)
+                        true,
+                        getStartKeyBoard(),
+                        getSupportKeyBoard(user)
                 );
-                break;
-            case SUPPORT_USERS_CMD:
-                if (user.isAdmin()) {
-                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
-                }
                 break;
             case FAQ:
                 sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
                 break;
+            case SUPPORT_USERS_CMD:
+                if (user.isAdmin()) {
+                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
+                    break;
+                }
+            case SUPPORT_LESSONS_CMD:
+                if (user.isAdmin()) {
+                    sendMessage(botId, chatId, "*Информация по урокам*\n" + getLessonsInfo(), true, getStartKeyBoard(), getSupportKeyBoard(user));
+                    break;
+                }
             default:
-                sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"), getStartKeyBoard(user));
+                sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"),
+                        true, getStartKeyBoard(), getSupportKeyBoard(user));
         }
     }
 
@@ -201,7 +212,9 @@ public class RouteService {
                 userSession.finishSession();
                 sendMessage(botId, chatId,
                         configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
-                        getStartKeyBoard(user)
+                        true,
+                        getStartKeyBoard(),
+                        getSupportKeyBoard(user)
                 );
                 break;
             case CHECK:
@@ -306,13 +319,28 @@ public class RouteService {
                 .map(l -> l.replace("\n", " - "))
                 .collect(Collectors.joining("\n"));
 
-        userInfo.append("User: ").append(String.format("%s %s", chosenUser.getFirstName(), chosenUser.getLastName())).append("\n")
-                .append("NickName: ").append(chosenUser.getNickName()).append("\n")
+        userInfo.append("User: ")
+                .append(
+                        String.format(
+                                "%s %s",
+                                Strings.nullToEmpty(chosenUser.getFirstName()),
+                                Strings.nullToEmpty(chosenUser.getLastName()))).append("\n")
+                .append("NickName: ").append(Strings.nullToEmpty(chosenUser.getNickName())).append("\n")
                 .append("Last seen: ").append(moscowDateFormat.format(chosenUser.getLastLogin())).append("\n")
                 .append("Assigned lessons:\n").append(userLessonsWithProgress);
 
-        sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(user), Collections.emptyList());
+        sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(), getSupportKeyBoard(user));
+    }
 
+    private String getLessonsInfo() {
+        StringBuilder lessonInfo = new StringBuilder();
+        lessonService.getLessons()
+                .forEach(l -> {
+                    lessonInfo.append("Lesson: ").append(l.getName()).append("\n")
+                            .append("How long is description: ").append(Strings.nullToEmpty(l.getDescription()).length()).append(" symbol(s)").append("\n")
+                            .append("The number of the tasks: ").append(questionService.getQuestions(l.getId()).size()).append("\n\n");
+                });
+        return lessonInfo.toString();
     }
 
     private void processOpenLesson(User user, Long chatId, int botId, String newMessage) {
@@ -548,11 +576,15 @@ public class RouteService {
         return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, LESSON_DESC_CMD, FINISH_LESSON);
     }
 
-    private List<String> getStartKeyBoard(User user) {
+    private List<String> getStartKeyBoard() {
+        return Arrays.asList(LESSONS_CMD, FAQ);
+    }
+
+    private List<String> getSupportKeyBoard(User user) {
         if (user.isAdmin()) {
-            return Arrays.asList(LESSONS_CMD, FAQ, SUPPORT_USERS_CMD);
+            return Arrays.asList(SUPPORT_USERS_CMD, SUPPORT_LESSONS_CMD);
         } else {
-            return Arrays.asList(LESSONS_CMD, FAQ);
+            return Collections.emptyList();
         }
     }
 
