@@ -15,7 +15,7 @@ import java.util.Date;
 @Table(name = "Lesson")
 public class Lesson implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Column(name = "name")

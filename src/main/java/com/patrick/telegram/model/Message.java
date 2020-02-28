@@ -10,7 +10,7 @@ import java.util.Date;
 public class Message implements Serializable {
     public static final String TABLE_NAME = "Message";
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Column(name = "name")

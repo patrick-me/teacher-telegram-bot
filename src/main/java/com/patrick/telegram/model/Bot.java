@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class Bot implements Serializable{
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @Column(name = "name")
     private String name;
