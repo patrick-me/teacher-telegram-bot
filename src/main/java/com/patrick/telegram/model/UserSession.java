@@ -9,7 +9,7 @@ public class UserSession {
     public static final String KEYBOARD_BUTTON_DELIMITER = " ; ";
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Column(name = "user_id")
