@@ -1,11 +1,14 @@
 package com.patrick.telegram.repository;
 
 import com.patrick.telegram.model.UserSession;
+import com.patrick.telegram.model.UserStat;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
+
+import java.util.Collection;
 
 public interface UserSessionRepository extends JpaRepository<UserSession, Integer>, CrudRepository<UserSession, Integer> {
 
@@ -46,4 +49,19 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Intege
             @Param("lesson_id") int lessonId,
             @Param("id") int userId
     );
+
+
+    @Query(value = "select to_date(cast(start_date as TEXT),'YYYY-MM-DD') as statDate,\n" +
+            "               count(*) as totalTaskCount,\n" +
+            "               count(*) FILTER (WHERE correct = True) as succeedTaskCount,\n" +
+            "               count(*) FILTER (WHERE correct = False) as failedTaskCount\n" +
+            "             from user_session us\n" +
+            "               join user2 u on u.id = us.user_id\n" +
+            "             where us.finished = True\n" +
+            "              AND user_id=:id\n" +
+            "              AND to_date(cast(start_date as TEXT),'YYYY-MM-DD') > current_date - interval '7 days'\n" +
+            "             group by u.id, statDate\n" +
+            "            order by u.id asc, statDate desc",
+            nativeQuery = true)
+    Collection<UserStat> getUserStats(@Param("id") int userId);
 }

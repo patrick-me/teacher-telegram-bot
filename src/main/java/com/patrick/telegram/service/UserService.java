@@ -9,6 +9,7 @@ import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -47,8 +48,8 @@ public class UserService {
         return userRepository.findOneByTelegramId(tid);
     }
 
-    public User getUserById(int id) {
-        return userRepository.findOne(id);
+    public Optional<User> getUserById(int id) {
+        return userRepository.findById(id);
     }
 
     public void saveUser(User user) {

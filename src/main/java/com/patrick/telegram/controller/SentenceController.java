@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -28,7 +29,8 @@ public class SentenceController {
 
     @GetMapping("/{id}")
     public Sentence getSentence(@PathVariable int id) {
-        return sentenceService.getSentence(id);
+        Optional<Sentence> sentence = sentenceService.getSentence(id);
+        return sentence.orElseThrow(() -> new RuntimeException("Sentence is not found"));
     }
 
     @DeleteMapping("/{id}")
