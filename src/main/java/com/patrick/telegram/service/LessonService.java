@@ -41,12 +41,15 @@ public class LessonService {
     }
 
     public Collection<Lesson> getUserLessons(int id) {
-        User user = userRepository.findOne(id);
-        if (user == null) {
+        Optional<User> optionalUser = this.userRepository.findById(id);
+
+        if (!optionalUser.isPresent()) {
             return new ArrayList<>();
         } else {
+            User user = optionalUser.get();
             user.getLessons().size();
-            return user.getLessons()
+            return user
+                    .getLessons()
                     .stream()
                     .sorted(Comparator.comparing(Lesson::getName))
                     .collect(Collectors.toList());
@@ -54,7 +57,7 @@ public class LessonService {
     }
 
     public Optional<Lesson> getLesson(int id) {
-        return Optional.ofNullable(lessonRepository.findOne(id));
+        return lessonRepository.findById(id);
     }
 
     public Optional<Lesson> getUserLessonByName(int userId, String name) {
@@ -62,8 +65,10 @@ public class LessonService {
     }
 
     public void saveUserLessons(int id, Collection<Lesson> lessons) {
-        User user = userRepository.findOne(id);
-        if (user != null) {
+        Optional<User> optionalUser = this.userRepository.findById(id);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
             user.setLessons(lessons);
             userRepository.save(user);
         }
@@ -72,6 +77,6 @@ public class LessonService {
     public void deleteLesson(int id) {
         lessonRepository.deleteAssignedQuestionTypesByLesson(id);
         lessonRepository.deleteAssignedUsersByLesson(id);
-        lessonRepository.delete(id);
+        lessonRepository.deleteById(id);
     }
 }

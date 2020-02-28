@@ -307,11 +307,12 @@ public class RouteService {
         String chosenUserId = newMessage.split("\n")[1];
         log.info("UserId: '{}'", chosenUserId);
 
-        User chosenUser = userService.getUserById(Integer.parseInt(chosenUserId));
-        if (chosenUser == null) {
+        Optional<User> optionalUser = userService.getUserById(Integer.parseInt(chosenUserId));
+        if (!optionalUser.isPresent()) {
             log.error("User is null, chosenUserId: '{}'", chosenUserId);
             return;
         }
+        User chosenUser = optionalUser.get();
 
         StringBuilder userInfo = new StringBuilder();
         String userLessonsWithProgress = getLessonsKeyBoard(chosenUser.getId()).stream()
@@ -330,6 +331,8 @@ public class RouteService {
                 .append("Assigned lessons:\n").append(userLessonsWithProgress);
 
         sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(), getSupportKeyBoard(user));
+        sendMessage(botId, chatId, getUserStatsForLastWeek(chosenUser), true, getStartKeyBoard(), getSupportKeyBoard(user));
+
     }
 
     private String getLessonsInfo() {
@@ -366,7 +369,13 @@ public class RouteService {
         }
 
         Lesson lesson = oLesson.get();
-        UserSession userSession = new UserSession(user, getRandomQuestion(user, lesson), lesson);
+        Optional<Question> optionalRandomQuestion = getRandomQuestion(user, lesson);
+
+        if (!optionalRandomQuestion.isPresent()) {
+            return;
+        }
+
+        UserSession userSession = new UserSession(user, optionalRandomQuestion.get(), lesson);
         userSessionService.save(userSession);
 
         sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
@@ -381,6 +390,68 @@ public class RouteService {
 
         Lesson lesson = oLesson.get();
         return lesson.getDescription();
+    }
+
+    private String getUserStatsForLastWeek(User user) {
+        Collection<UserStat> userStats = userSessionService.getUserStats(user.getId(), 7);
+        int totalSum = userStats.stream().mapToInt(UserStat::getTotalTaskCount).sum();
+
+        if (totalSum == 0) {
+            return "There are no statistics here";
+        }
+        int dateLen = "2020-01-01".length() + 4;
+
+        int succeedSum = userStats.stream().mapToInt(UserStat::getSucceedTaskCount).sum();
+        int failedSum = userStats.stream().mapToInt(UserStat::getFailedTaskCount).sum();
+
+        int resizeLen = 6;
+        StringBuilder sb = new StringBuilder("```\n\nСтатистика за неделю\n" +
+                "Кол-во пройденных заданий\n'+' - succeed\n'-' - failed\n'T' - total\n\n")
+                .append("\n" + "Date:      ")
+                .append(resize("+", resizeLen))
+                .append(resize("+%", resizeLen))
+                .append(resize("-", resizeLen))
+                .append(resize("-%", resizeLen))
+                .append(resize("T", resizeLen))
+                .append("\n");
+
+        userStats.stream()
+                .sorted(Comparator.comparing(UserStat::getStatDate))
+                .forEach(us -> {
+                    int succeedTaskCount = us.getSucceedTaskCount();
+                    int failedTaskCount = us.getFailedTaskCount();
+                    int totalTaskCount = us.getTotalTaskCount();
+
+                    sb.append(us.getStatDate()).append(":")
+                            .append(resize(succeedTaskCount, resizeLen))
+                            .append(resize(100 * succeedTaskCount / totalTaskCount, resizeLen - 1)).append("%")
+                            .append(resize(failedTaskCount, resizeLen))
+                            .append(resize(100 - (100 * succeedTaskCount / totalTaskCount), resizeLen - 1)).append("%")
+                            .append(resize(totalTaskCount, resizeLen)).append("\n");
+                });
+
+        sb.append("\n")
+                .append("For week:  ")
+                .append(resize(succeedSum, resizeLen))
+                .append(resize(100 * succeedSum / totalSum, resizeLen - 1)).append("%")
+                .append(resize(failedSum, resizeLen))
+                .append(resize(100 - (100 * succeedSum / totalSum), resizeLen - 1)).append("%")
+                .append(resize(totalSum, resizeLen)).append("\n```");
+
+        return sb.toString();
+    }
+
+
+    private String resize(int i, int len) {
+        return resize(String.valueOf(i), len);
+    }
+
+    private String resize(String i, int len) {
+        StringBuilder s = new StringBuilder(String.valueOf(i));
+        while (s.length() < len) {
+            s.insert(0, " ");
+        }
+        return s.toString();
     }
 
     private Optional<org.telegram.telegrambots.meta.api.objects.Message> sendMessage(int botId, long chatId, String text) {
@@ -497,7 +568,7 @@ public class RouteService {
         }
     }
 
-    private Question getRandomQuestion(User user, Lesson lesson) {
+    private Optional<Question> getRandomQuestion(User user, Lesson lesson) {
         return questionService.getRandomQuestion(user.getId(), lesson.getId());
     }
 
@@ -508,6 +579,7 @@ public class RouteService {
         // Create the keyboard (list of keyboard rows)
         List<KeyboardRow> keyboard = new ArrayList<>();
         // Create a keyboard row
+        //TODO: number as param
         addRowsToKeyBoard(keyboard, keyboardElements, 3);
         addRowsToKeyBoard(keyboard, keyboardControlElements, 3);
 
@@ -540,7 +612,7 @@ public class RouteService {
 
     private List<String> getUsersForKeyBoard() {
         return userService.getUsers().stream()
-                .map(u -> String.format("%s %s\n%s", u.getFirstName(), u.getLastName(), u.getId()))
+                .map(u -> String.format("%s %s\n%s", Strings.nullToEmpty(u.getFirstName()), Strings.nullToEmpty(u.getLastName()), u.getId()))
                 .collect(Collectors.toList());
     }
 

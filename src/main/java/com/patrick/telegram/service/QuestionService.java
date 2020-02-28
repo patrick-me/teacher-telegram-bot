@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 /**
  * Created by Patrick on 26.01.2018.
@@ -28,9 +29,9 @@ public class QuestionService {
         return questionRepository.findAll();
     }
 
-    public Question getRandomQuestion(int userId, int lessonId) {
+    public Optional<Question> getRandomQuestion(int userId, int lessonId) {
         int nextQuestionId = questionRepository.findRandomOneWithMinIndex(userId, lessonId);
-        return questionRepository.findOne(nextQuestionId);
+        return questionRepository.findById(nextQuestionId);
     }
 
     public Question getQuestionStub() {

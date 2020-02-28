@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import javax.transaction.Transactional;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -34,8 +35,8 @@ public class SentenceService {
         return sentenceRepository.findAll();
     }
 
-    public Sentence getSentence(int id) {
-        return sentenceRepository.findOne(id);
+    public Optional<Sentence> getSentence(int id) {
+        return sentenceRepository.findById(id);
     }
 
     public void addSentence(Sentence sentence) {
