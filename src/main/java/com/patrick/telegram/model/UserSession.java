@@ -55,6 +55,11 @@ public class UserSession {
         return correct;
     }
 
+    public void finishSession() {
+        isCorrect();
+        finished = true;
+    }
+
     public Question getQuestion() {
         return question;
     }
@@ -110,10 +115,6 @@ public class UserSession {
 
         userKeyBoard = fromKeyBoard(updatedKeyBoard);
         return true;
-    }
-
-    public void finishSession() {
-        finished = true;
     }
 
     public int getId() {

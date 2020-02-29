@@ -43,7 +43,7 @@ public class UserSessionService {
     }
 
     public Collection<UserStat> getUserStats(int userId, int periodInDays) {
-        Collection<UserStat> userStats = userSessionRepository.getUserStats(userId);
+        Collection<UserStat> userStats = userSessionRepository.getUserStats(userId, periodInDays);
         return userStats == null ? Collections.emptyList() : userStats;
     }
 }
