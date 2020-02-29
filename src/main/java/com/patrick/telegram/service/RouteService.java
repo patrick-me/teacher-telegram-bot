@@ -191,9 +191,10 @@ public class RouteService {
                 if (user.isAdmin()) {
                     //Show if user active last n days; 0 - show all users
                     int days = newMessage.equals(SUPPORT_ALL_USERS_CMD) ? 0 : REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS;
-                    String extra = "\n" + ((days == 0)
-                            ? "Показаны все пользователи"
-                            : "Показаны все пользователи\nc активностью за последние " + REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS + " дней");
+                    String prefix = "\nПоказаны все пользователи\nу которых есть назначенные уроки\n";
+                    String extra = (days == 0)
+                            ? prefix
+                            : prefix + "c активностью за последние " + REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS + " дней";
                     sendMessage(botId, chatId, "Выберите пользователя" + extra, getUsersForKeyBoard(days));
                     break;
                 }
@@ -422,7 +423,7 @@ public class RouteService {
         int failedSum = userStats.stream().mapToInt(UserStat::getFailedTaskCount).sum();
 
         int resizeLen = 6;
-        StringBuilder sb = new StringBuilder("```\n\nСтатистика за " + periodInDays + " дней\n" +
+        StringBuilder sb = new StringBuilder("```Статистика за " + periodInDays + " дней\n" +
                 "Кол-во пройденных заданий\n'+' - succeed\n'-' - failed\n'T' - total\n\n")
                 .append("\n" + "Date:      ")
                 .append(resize("+", resizeLen))
@@ -632,9 +633,9 @@ public class RouteService {
         if (days > 0) {
             stream = stream.filter(u -> Objects.nonNull(u.getLastLogin()))
                     .filter(u -> Duration.between(u.getLastLogin().toInstant(), Instant.now()).toDays() < days);
-
         }
         return stream
+                .filter(u -> !u.getLessons().isEmpty())
                 .map(u -> String.format("%s %s\n%s", Strings.nullToEmpty(u.getFirstName()), Strings.nullToEmpty(u.getLastName()), u.getId()))
                 .collect(Collectors.toList());
     }
