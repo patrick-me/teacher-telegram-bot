@@ -423,7 +423,7 @@ public class RouteService {
         int failedSum = userStats.stream().mapToInt(UserStat::getFailedTaskCount).sum();
 
         int resizeLen = 6;
-        StringBuilder sb = new StringBuilder("```Статистика за " + periodInDays + " дней\n" +
+        StringBuilder sb = new StringBuilder("```\nСтатистика за " + periodInDays + " дней\n" +
                 "Кол-во пройденных заданий\n'+' - succeed\n'-' - failed\n'T' - total\n\n")
                 .append("\n" + "Date:      ")
                 .append(resize("+", resizeLen))
