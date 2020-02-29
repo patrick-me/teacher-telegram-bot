@@ -190,7 +190,7 @@ public class RouteService {
             case SUPPORT_USERS_CMD:
                 if (user.isAdmin()) {
                     //Show if user active last n days; 0 - show all users
-                    int days = newMessage.equals(SUPPORT_USERS_CMD) ? 0 : REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS;
+                    int days = newMessage.equals(SUPPORT_ALL_USERS_CMD) ? 0 : REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS;
                     String extra = "\n" + ((days == 0)
                             ? "Показаны все пользователи"
                             : "Показаны все пользователи\nc активностью за последние " + REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS + " дней");
@@ -631,7 +631,7 @@ public class RouteService {
         Stream<User> stream = userService.getUsers().stream();
         if (days > 0) {
             stream = stream.filter(u -> Objects.nonNull(u.getLastLogin()))
-                    .filter(u -> Duration.between(Instant.now(), u.getLastLogin().toInstant()).toDays() < days);
+                    .filter(u -> Duration.between(u.getLastLogin().toInstant(), Instant.now()).toDays() < days);
 
         }
         return stream
