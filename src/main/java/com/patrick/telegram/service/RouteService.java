@@ -27,8 +27,11 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by Patrick on 17.03.2018.
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 @Service
 public class RouteService {
 
+    public static final int REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS = 60;
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private static final String NEXT_PROBLEM = "Следующее задание";
@@ -51,6 +55,7 @@ public class RouteService {
 
     private static final String FAQ = "FAQ";
 
+    private static final String SUPPORT_ALL_USERS_CMD = "/all_users";
     private static final String SUPPORT_USERS_CMD = "/users";
     private static final String SUPPORT_LESSONS_CMD = "/lessons";
 
@@ -143,6 +148,8 @@ public class RouteService {
                         (BACK_TO_LESSONS_CMD.equals(userLastMessage) && !BACK_TO_LESSONS_CMD.equals(newMessage))
         ) {
             processOpenLesson(user, chatId, botId, newMessage);
+        } else if (user.isAdmin() && SUPPORT_ALL_USERS_CMD.equals(userLastMessage) && !SUPPORT_ALL_USERS_CMD.equals(newMessage)) {
+            processUserSupport(user, chatId, botId, newMessage);
         } else if (user.isAdmin() && SUPPORT_USERS_CMD.equals(userLastMessage) && !SUPPORT_USERS_CMD.equals(newMessage)) {
             processUserSupport(user, chatId, botId, newMessage);
         } else {
@@ -179,9 +186,15 @@ public class RouteService {
             case FAQ:
                 sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
                 break;
+            case SUPPORT_ALL_USERS_CMD:
             case SUPPORT_USERS_CMD:
                 if (user.isAdmin()) {
-                    sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard());
+                    //Show if user active last n days; 0 - show all users
+                    int days = newMessage.equals(SUPPORT_USERS_CMD) ? 0 : REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS;
+                    String extra = "\n" + ((days == 0)
+                            ? "Показаны все пользователи"
+                            : "Показаны все пользователи\nc активностью за последние " + REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS + " дней");
+                    sendMessage(botId, chatId, "Выберите пользователя" + extra, getUsersForKeyBoard(days));
                     break;
                 }
             case SUPPORT_LESSONS_CMD:
@@ -304,6 +317,10 @@ public class RouteService {
     //user firstname lastname\nuser_id
     //chosen user expected - to show stats and lastLogin
     private void processUserSupport(User user, Long chatId, int botId, String newMessage) {
+        if (!newMessage.contains("\n")) {
+            sendMessage(botId, chatId, "Выберите пользователя", getUsersForKeyBoard(0));
+            return;
+        }
         String chosenUserId = newMessage.split("\n")[1];
         log.info("UserId: '{}'", chosenUserId);
 
@@ -393,19 +410,19 @@ public class RouteService {
     }
 
     private String getUserStatsForLastWeek(User user) {
-        Collection<UserStat> userStats = userSessionService.getUserStats(user.getId(), 7);
+        int periodInDays = 7;
+        Collection<UserStat> userStats = userSessionService.getUserStats(user.getId(), periodInDays);
         int totalSum = userStats.stream().mapToInt(UserStat::getTotalTaskCount).sum();
 
         if (totalSum == 0) {
             return "There are no statistics here";
         }
-        int dateLen = "2020-01-01".length() + 4;
 
         int succeedSum = userStats.stream().mapToInt(UserStat::getSucceedTaskCount).sum();
         int failedSum = userStats.stream().mapToInt(UserStat::getFailedTaskCount).sum();
 
         int resizeLen = 6;
-        StringBuilder sb = new StringBuilder("```\n\nСтатистика за неделю\n" +
+        StringBuilder sb = new StringBuilder("```\n\nСтатистика за " + periodInDays + " дней\n" +
                 "Кол-во пройденных заданий\n'+' - succeed\n'-' - failed\n'T' - total\n\n")
                 .append("\n" + "Date:      ")
                 .append(resize("+", resizeLen))
@@ -431,7 +448,7 @@ public class RouteService {
                 });
 
         sb.append("\n")
-                .append("For week:  ")
+                .append("Total:     ")
                 .append(resize(succeedSum, resizeLen))
                 .append(resize(100 * succeedSum / totalSum, resizeLen - 1)).append("%")
                 .append(resize(failedSum, resizeLen))
@@ -610,14 +627,21 @@ public class RouteService {
         return !lessonService.getUserLessons(userId).isEmpty();
     }
 
-    private List<String> getUsersForKeyBoard() {
-        return userService.getUsers().stream()
+    private List<String> getUsersForKeyBoard(int days) {
+        Stream<User> stream = userService.getUsers().stream();
+        if (days > 0) {
+            stream = stream.filter(u -> Objects.nonNull(u.getLastLogin()))
+                    .filter(u -> Duration.between(Instant.now(), u.getLastLogin().toInstant()).toDays() < days);
+
+        }
+        return stream
                 .map(u -> String.format("%s %s\n%s", Strings.nullToEmpty(u.getFirstName()), Strings.nullToEmpty(u.getLastName()), u.getId()))
                 .collect(Collectors.toList());
     }
 
     private List<String> getLessonsKeyBoard(int userId) {
         return lessonService.getUserLessons(userId).stream()
+                .filter(l -> questionService.getQuestions(l.getId()).size() > 0)
                 .map(l -> {
                     String progress = getProgressByLesson(userId, l);
                     return l.getName() + progress;
@@ -653,7 +677,7 @@ public class RouteService {
 
     private List<String> getSupportKeyBoard(User user) {
         if (user.isAdmin()) {
-            return Arrays.asList(SUPPORT_USERS_CMD, SUPPORT_LESSONS_CMD);
+            return Arrays.asList(SUPPORT_USERS_CMD, SUPPORT_ALL_USERS_CMD, SUPPORT_LESSONS_CMD);
         } else {
             return Collections.emptyList();
         }

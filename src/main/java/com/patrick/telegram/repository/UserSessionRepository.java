@@ -51,17 +51,19 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Intege
     );
 
 
-    @Query(value = "select to_date(cast(start_date as TEXT),'YYYY-MM-DD') as statDate,\n" +
+    @Query(value = "select to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') as statDate,\n" +
             "               count(*) as totalTaskCount,\n" +
             "               count(*) FILTER (WHERE correct = True) as succeedTaskCount,\n" +
             "               count(*) FILTER (WHERE correct = False) as failedTaskCount\n" +
             "             from user_session us\n" +
             "               join user2 u on u.id = us.user_id\n" +
-            "             where us.finished = True\n" +
-            "              AND user_id=:id\n" +
-            "              AND to_date(cast(start_date as TEXT),'YYYY-MM-DD') > current_date - interval '7 days'\n" +
+            "             where user_id=:id\n" +
+            "              AND us.user_key_board is not null\n" +
+            "              AND us.finished = True\n" +
+            "              AND to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') > current_date - interval '30 days'\n" +
             "             group by u.id, statDate\n" +
-            "            order by u.id asc, statDate desc",
+            "            order by u.id asc, statDate desc\n" +
+            "            limit :days",
             nativeQuery = true)
-    Collection<UserStat> getUserStats(@Param("id") int userId);
+    Collection<UserStat> getUserStats(@Param("id") int userId, @Param("days") int limit);
 }
