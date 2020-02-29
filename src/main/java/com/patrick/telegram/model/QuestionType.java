@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Table(name = "QuestionType")
 public class QuestionType implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
     @Column(name = "name")

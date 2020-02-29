@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Table(name = "Question")
 public class Question implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
     @BatchSize(size = 25)
     @OneToOne
