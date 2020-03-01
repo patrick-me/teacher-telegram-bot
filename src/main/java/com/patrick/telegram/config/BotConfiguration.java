@@ -18,6 +18,9 @@ import javax.annotation.PreDestroy;
 @Configuration
 @EnableScheduling
 public class BotConfiguration {
+    public static final int FIXED_DELAY_IN_MILLIS = 5 * 60 * 1000; // 5 min
+    public static final int INITIAL_DELAY_IN_MILLIS = 5 * 1000; // 5 sec
+
     private final BotService botService;
     private static volatile boolean isRegistered = false;
 
@@ -28,16 +31,16 @@ public class BotConfiguration {
         this.botService = botService;
     }
 
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(fixedDelay = FIXED_DELAY_IN_MILLIS, initialDelay = INITIAL_DELAY_IN_MILLIS)
     protected void startBots() {
         for (Bot bot : botService.getBots()) {
-            log.info("Heartbeat - Bot [ID:{}, NAME:{}, STATUS:{}]", bot.getId(), bot.getName(), bot.getStatus());
             if (!isRegistered || bot.getStatus() == Bot.Status.DISCONNECTED) {
                 ApiContextInitializer.init();
                 log.info("Bot [ID:{}, NAME:{}] is connecting to telegram ...", bot.getId(), bot.getName());
                 botService.connect(bot.getId());
                 isRegistered = true;
             }
+            log.info("Heartbeat - Bot [ID:{}, NAME:{}, STATUS:{}]", bot.getId(), bot.getName(), bot.getStatus());
         }
     }
 
