@@ -2,7 +2,6 @@ package com.patrick.telegram.service;
 
 import com.patrick.telegram.model.Message;
 import com.patrick.telegram.repository.MessageRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -13,10 +12,13 @@ import java.util.Optional;
  */
 @Service
 @Transactional
-public class MessageService {
+public class UserMessageService {
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final MessageRepository messageRepository;
+
+    public UserMessageService(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
+    }
 
     public String getLastMessage(int userId) {
         return Optional.ofNullable(messageRepository.findLastUserMessage(userId))

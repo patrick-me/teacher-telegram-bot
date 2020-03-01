@@ -16,7 +16,7 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Intege
     @Query(value = "delete from user_session where question_id in (select id from question where sentence_id = :s_id)", nativeQuery = true)
     void deleteBySentenceId(@Param("s_id") int id);
 
-    @Query(value = "SELECT * FROM user_session WHERE finished = false AND user_id=:id LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM user_session WHERE finished = false AND user_id=:id ORDER BY start_date desc LIMIT 1", nativeQuery = true)
     UserSession findOneByUserId(@Param("id") int userId);
 
     @Modifying()
