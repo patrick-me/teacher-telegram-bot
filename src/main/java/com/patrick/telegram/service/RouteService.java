@@ -324,7 +324,14 @@ public class RouteService {
         String chosenUserId = newMessage.split("\n")[1];
         log.info("UserId: '{}'", chosenUserId);
 
-        Optional<User> optionalUser = userService.getUserById(Integer.parseInt(chosenUserId));
+        int id;
+        try {
+            id = Integer.parseInt(chosenUserId);
+        } catch (Exception e) {
+            log.error("Can't parse number: {}", chosenUserId);
+            return;
+        }
+        Optional<User> optionalUser = userService.getUserById(id);
         if (!optionalUser.isPresent()) {
             log.error("User is null, chosenUserId: '{}'", chosenUserId);
             return;
@@ -422,9 +429,14 @@ public class RouteService {
         int failedSum = userStats.stream().mapToInt(UserStat::getFailedTaskCount).sum();
 
         int resizeLen = 6;
-        StringBuilder sb = new StringBuilder("```\nСтатистика за " + periodInDays + " дней\n" +
-                "Кол-во пройденных заданий\n'+' - succeed\n'-' - failed\n'T' - total\n\n")
-                .append("\n" + "Date:      ")
+        int maxLessonNameLength = userStats.stream().mapToInt(u -> u.getLessonName().length()).max().orElse(0);
+        int maxResizeLen = Math.max(maxLessonNameLength, resizeLen) + 2;
+
+        StringBuilder sb = new StringBuilder("Статистика за " + periodInDays + " дней\n" +
+                "Для лучшего понимания, переверните телефон\n" +
+                "Кол-во пройденных заданий\n'+' - done correctly\n'-' - failed\n'T' - total\n\n")
+
+                .append("```\n").append(resizeTail("Date:", maxResizeLen))
                 .append(resize("+", resizeLen))
                 .append(resize("+%", resizeLen))
                 .append(resize("-", resizeLen))
@@ -432,6 +444,7 @@ public class RouteService {
                 .append(resize("T", resizeLen))
                 .append("\n");
 
+        Set<Date> showedDates = new HashSet<>();
         userStats.stream()
                 .sorted(Comparator.comparing(UserStat::getStatDate))
                 .forEach(us -> {
@@ -439,7 +452,11 @@ public class RouteService {
                     int failedTaskCount = us.getFailedTaskCount();
                     int totalTaskCount = us.getTotalTaskCount();
 
-                    sb.append(us.getStatDate()).append(":")
+                    if (!showedDates.contains(us.getStatDate())) {
+                        sb.append(us.getStatDate()).append("\n");
+                        showedDates.add(us.getStatDate());
+                    }
+                    sb.append(resizeTail(" " + us.getLessonName() + ":", maxResizeLen))
                             .append(resize(succeedTaskCount, resizeLen))
                             .append(resize(100 * succeedTaskCount / totalTaskCount, resizeLen - 1)).append("%")
                             .append(resize(failedTaskCount, resizeLen))
@@ -448,7 +465,7 @@ public class RouteService {
                 });
 
         sb.append("\n")
-                .append("Total:     ")
+                .append(resizeTail("Total:", maxResizeLen))
                 .append(resize(succeedSum, resizeLen))
                 .append(resize(100 * succeedSum / totalSum, resizeLen - 1)).append("%")
                 .append(resize(failedSum, resizeLen))
@@ -464,9 +481,22 @@ public class RouteService {
     }
 
     private String resize(String i, int len) {
+        return resize(i, len, true);
+    }
+
+    private String resizeTail(String i, int len) {
+        return resize(i, len, false);
+    }
+
+    private String resize(String i, int len, boolean addToHead) {
+
         StringBuilder s = new StringBuilder(String.valueOf(i));
         while (s.length() < len) {
-            s.insert(0, " ");
+            if (addToHead) {
+                s.insert(0, " ");
+            } else {
+                s.append(" ");
+            }
         }
         return s.toString();
     }
