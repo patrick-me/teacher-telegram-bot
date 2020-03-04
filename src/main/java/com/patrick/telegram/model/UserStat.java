@@ -6,6 +6,8 @@ import java.util.Date;
 public interface UserStat {
     Date getStatDate();
 
+    String getLessonName();
+
     int getTotalTaskCount();
 
     int getSucceedTaskCount();

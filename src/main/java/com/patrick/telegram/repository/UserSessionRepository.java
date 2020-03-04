@@ -51,19 +51,22 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Intege
     );
 
 
-    @Query(value = "select to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') as statDate,\n" +
-            "               count(*) as totalTaskCount,\n" +
-            "               count(*) FILTER (WHERE correct = True) as succeedTaskCount,\n" +
-            "               count(*) FILTER (WHERE correct = False) as failedTaskCount\n" +
-            "             from user_session us\n" +
-            "               join user2 u on u.id = us.user_id\n" +
-            "             where user_id=:id\n" +
-            "              AND us.user_key_board is not null\n" +
-            "              AND us.finished = True\n" +
-            "              AND to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') > current_date - interval '30 days'\n" +
-            "             group by u.id, statDate\n" +
-            "            order by u.id asc, statDate desc\n" +
-            "            limit :days",
+    @Query(value = "select to_date(cast(us.start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') as statDate,\n" +
+            "       l.name as lessonName,\n" +
+            "       count(*) as totalTaskCount,\n" +
+            "       count(*) FILTER (WHERE correct = True) as succeedTaskCount,\n" +
+            "       count(*) FILTER (WHERE correct = False) as failedTaskCount\n" +
+            "from user_session us\n" +
+            "         join user2 u on u.id = us.user_id\n" +
+            "         join lesson l on l.id = us.lesson_id\n" +
+            "         -- Limit days to show\n" +
+            "         join (select to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') as d from user_session us where user_id=:id and to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') > current_date - interval '30 days' group by d order by d desc limit :days) dd  on dd.d = to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD')\n" +
+            "where user_id=:id\n" +
+            "  AND us.user_key_board is not null\n" +
+            "  AND us.finished = True\n" +
+            "  AND to_date(cast(start_date at time zone 'utc' at time zone 'MSK' as TEXT),'YYYY-MM-DD') > current_date - interval '30 days'\n" +
+            "group by statDate, l.name\n" +
+            "order by statDate desc,  l.name asc",
             nativeQuery = true)
     Collection<UserStat> getUserStats(@Param("id") int userId, @Param("days") int limit);
 }
