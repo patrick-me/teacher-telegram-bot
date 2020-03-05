@@ -1,5 +1,6 @@
 package com.patrick.telegram.service;
 
+import com.patrick.telegram.model.LessonToPhrase;
 import com.patrick.telegram.model.Question;
 import com.patrick.telegram.model.Sentence;
 import com.patrick.telegram.repository.QuestionRepository;
@@ -11,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import javax.transaction.Transactional;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -66,5 +68,11 @@ public class SentenceService {
 
     public Collection<Sentence> getSentences(int lessonId) {
         return sentenceRepository.getSentences(lessonId);
+    }
+
+    public Collection<LessonToPhrase> getLessonsWithPhraseOccurrences(String phrase) {
+        Collection<LessonToPhrase> result = sentenceRepository.getLessonsWithPhraseOccurrences(phrase);
+        return result == null ? Collections.emptyList() : result;
+
     }
 }

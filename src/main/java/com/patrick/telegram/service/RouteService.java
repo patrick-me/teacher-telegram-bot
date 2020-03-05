@@ -41,6 +41,7 @@ public class RouteService {
     private static final String SUPPORT_ALL_USERS_CMD = "/all_users";
     private static final String SUPPORT_USERS_CMD = "/users";
     private static final String SUPPORT_LESSONS_CMD = "/lessons";
+    private static final String SUPPORT_SEARCH_CMD = "/search";
 
 
     private static final List<String> REACTIONS_ON_CORRECT_ANSWER = ImmutableList.of(
@@ -136,8 +137,10 @@ public class RouteService {
             processActiveUserSession(botId, message, newMessage, user, chatId, oUserSession.get());
         } else if (shouldShowLessons(newMessage, lastMessage)) {
             processOpenLesson(user, chatId, botId, newMessage);
-        } else if (shouldShowUserSupports(user, newMessage, lastMessage)) {
+        } else if (shouldShowUserSupport(user, newMessage, lastMessage)) {
             processUserSupport(user, chatId, botId, newMessage);
+        } else if (shouldSearchPhraseSupport(user, newMessage, lastMessage)) {
+            processSearchSupport(chatId, botId, newMessage);
         } else {
             /* First user access or after finish lesson */
             processStartOrReturnToStartPoint(botId, newMessage, user, chatId);
@@ -147,7 +150,13 @@ public class RouteService {
         userService.saveUser(user);
     }
 
-    private boolean shouldShowUserSupports(User user, String newMessage, String lastMessage) {
+    private boolean shouldSearchPhraseSupport(User user, String newMessage, String lastMessage) {
+        return user.isAdmin() && (
+                (SUPPORT_SEARCH_CMD.equals(lastMessage) && !SUPPORT_SEARCH_CMD.equals(newMessage))
+        );
+    }
+
+    private boolean shouldShowUserSupport(User user, String newMessage, String lastMessage) {
         return user.isAdmin() && (
                 (SUPPORT_ALL_USERS_CMD.equals(lastMessage) && !SUPPORT_ALL_USERS_CMD.equals(newMessage))
                         || (SUPPORT_USERS_CMD.equals(lastMessage) && !SUPPORT_USERS_CMD.equals(newMessage))
@@ -196,6 +205,11 @@ public class RouteService {
                     botMessageService.sendMessage(botId, chatId, "Выберите пользователя" + extra, getUsersForKeyBoard(days));
                     break;
                 }
+            case SUPPORT_SEARCH_CMD:
+                if (user.isAdmin()) {
+                    botMessageService.sendMessage(botId, chatId, "Введите фразу, например 'angry at', чтобы узнать сколько раз она встречается в предложениях");
+                    break;
+                }
             case SUPPORT_LESSONS_CMD:
                 if (user.isAdmin()) {
                     botMessageService.sendMessage(botId, chatId, "*Информация по урокам*\n" + getLessonsInfo(), true, getStartKeyBoard(), getSupportKeyBoard(user));
@@ -242,8 +256,8 @@ public class RouteService {
 
                 String checkMessage = (userSession.isCorrect()) ? correctDesc :
                         incorrectDesc + "\n\n" +
-                                incorrectDesc1 + " " + userSession.getCorrectQuestion() + "\n" +
-                                incorrectDesc2 + " " + userSession.getUserQuestion();
+                                incorrectDesc1 + " " + removeSpaceBeforeSigns(userSession.getCorrectQuestion()) + "\n" +
+                                incorrectDesc2 + " " + removeSpaceBeforeSigns(userSession.getUserQuestion());
 
                 botMessageService.sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
                 sendPanda(botId, chatId, user.getId(), userSession);
@@ -260,7 +274,7 @@ public class RouteService {
 
                 if (successfulProcessed) {
                     if (userSession.hasBotReplyMessageId()) {
-                        botMessageService.editMessage(botId, chatId, userSession.getBotReplyMessageId(), userSession.getUserQuestion());
+                        botMessageService.editMessage(botId, chatId, userSession.getBotReplyMessageId(), removeSpaceBeforeSigns(userSession.getUserQuestion()));
                     } else {
                         Optional<org.telegram.telegrambots.meta.api.objects.Message> oSentMessage = botMessageService.sendMessage(
                                 botId, chatId, userSession.getUserQuestion()
@@ -312,6 +326,31 @@ public class RouteService {
                 .append(" - ").append(100 * userSuccessfulAnsweredQuestions.size() / questions.size()).append("%")
                 .append("*").append(ln);
         return statistic.toString();
+    }
+
+    private void processSearchSupport(Long chatId, int botId, String newMessage) {
+        Collection<LessonToPhrase> lessonsWithPhraseOccurrences = sentenceService.getLessonsWithPhraseOccurrences(newMessage);
+        int total = lessonsWithPhraseOccurrences.stream()
+                .mapToInt(LessonToPhrase::getOccurrenceCount)
+                .sum();
+
+        int maxLessonNameLength = lessonsWithPhraseOccurrences.stream()
+                .mapToInt(p -> p.getLessonName().length())
+                .max().orElse(0);
+
+        int resizeLen = 5;
+
+        String response = "```\n";
+        response += lessonsWithPhraseOccurrences.stream()
+                .map(
+                        p -> resizeTail(p.getLessonName() + ": ", maxLessonNameLength) + resize(p.getOccurrenceCount(), resizeLen)
+                )
+                .collect(Collectors.joining("\n"));
+        response += "\n\n";
+        response += resizeTail("Total:", maxLessonNameLength) + resize(total, resizeLen + 2);
+        response += "\n```";
+        botMessageService.sendMessage(botId, chatId, response);
+
     }
 
     //user firstname lastname\nuser_id
@@ -404,6 +443,14 @@ public class RouteService {
 
         botMessageService.sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
+    }
+
+    private String removeSpaceBeforeSigns(String s) {
+        return s.replace(" ,", ",")
+                .replace(" .", ".")
+                .replace(" !", "!")
+                .replace(" ?", "?")
+                .replace(" :", ":");
     }
 
     private String getLessonDesc(UserSession currentUserSession) {
@@ -561,7 +608,7 @@ public class RouteService {
 
     private List<String> getSupportKeyBoard(User user) {
         if (user.isAdmin()) {
-            return Arrays.asList(SUPPORT_USERS_CMD, SUPPORT_ALL_USERS_CMD, SUPPORT_LESSONS_CMD);
+            return Arrays.asList(SUPPORT_USERS_CMD, SUPPORT_ALL_USERS_CMD, SUPPORT_LESSONS_CMD, SUPPORT_SEARCH_CMD);
         } else {
             return Collections.emptyList();
         }
