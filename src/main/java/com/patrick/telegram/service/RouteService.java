@@ -36,7 +36,7 @@ public class RouteService {
     private static final String LESSON_DESC_CMD = "Описание урока";
     private static final String BACK_TO_LESSONS_CMD = "К урокам";
 
-    private static final String FAQ = "FAQ";
+    private static final String SEVERAL_DAYS_STAT_CMD = "Статистика за 7 дней";
 
     private static final String SUPPORT_ALL_USERS_CMD = "/all_users";
     private static final String SUPPORT_USERS_CMD = "/users";
@@ -183,15 +183,15 @@ public class RouteService {
                         chatId,
                         configService.getCommandDescription(
                                 LESSONS_CMD + " (Когда у пользователя нет назначеных уроков)",
-                                "Кажется, у тебя еще нет уроков. Спроси учителя об этом."
+                                "Кажется, у тебя ещё нет уроков. Спроси учителя об этом."
                         ),
                         true,
-                        getStartKeyBoard(),
+                        getStartKeyBoard(user),
                         getSupportKeyBoard(user)
                 );
                 break;
-            case FAQ:
-                botMessageService.sendMessage(botId, chatId, configService.getCommandDescription(FAQ, "Тут будет много текста, приходи в другой раз"));
+            case SEVERAL_DAYS_STAT_CMD:
+                botMessageService.sendMessage(botId, chatId, getUserStatsForLastWeek(user), true, getStartKeyBoard(user), getSupportKeyBoard(user));
                 break;
             case SUPPORT_ALL_USERS_CMD:
             case SUPPORT_USERS_CMD:
@@ -212,12 +212,12 @@ public class RouteService {
                 }
             case SUPPORT_LESSONS_CMD:
                 if (user.isAdmin()) {
-                    botMessageService.sendMessage(botId, chatId, "*Информация по урокам*\n" + getLessonsInfo(), true, getStartKeyBoard(), getSupportKeyBoard(user));
+                    botMessageService.sendMessage(botId, chatId, "*Информация по урокам*\n" + getLessonsInfo(), true, getStartKeyBoard(user), getSupportKeyBoard(user));
                     break;
                 }
             default:
                 botMessageService.sendMessage(botId, chatId, configService.getCommandDescription("Приветствие", "Рад видеть, давай учиться!"),
-                        true, getStartKeyBoard(), getSupportKeyBoard(user));
+                        true, getStartKeyBoard(user), getSupportKeyBoard(user));
         }
     }
 
@@ -239,7 +239,7 @@ public class RouteService {
                 botMessageService.sendMessage(botId, chatId,
                         configService.getCommandDescription(FINISH_LESSON, "Возвращайся поскорее!"),
                         true,
-                        getStartKeyBoard(),
+                        getStartKeyBoard(user),
                         getSupportKeyBoard(user)
                 );
                 break;
@@ -393,9 +393,8 @@ public class RouteService {
                 .append("Last seen: ").append(moscowDateFormat.format(chosenUser.getLastLogin())).append("\n")
                 .append("Assigned lessons:\n").append(userLessonsWithProgress);
 
-        botMessageService.sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(), getSupportKeyBoard(user));
-        botMessageService.sendMessage(botId, chatId, getUserStatsForLastWeek(chosenUser), true, getStartKeyBoard(), getSupportKeyBoard(user));
-
+        botMessageService.sendMessage(botId, chatId, userInfo.toString(), false, getStartKeyBoard(user), getSupportKeyBoard(user));
+        botMessageService.sendMessage(botId, chatId, getUserStatsForLastWeek(chosenUser), true, getStartKeyBoard(user), getSupportKeyBoard(user));
     }
 
     private String getLessonsInfo() {
@@ -480,8 +479,11 @@ public class RouteService {
         int maxResizeLen = Math.max(maxLessonNameLength, resizeLen) + 2;
 
         StringBuilder sb = new StringBuilder("Статистика за " + periodInDays + " дней\n" +
-                "Для лучшего понимания, переверните телефон\n" +
-                "Кол-во пройденных заданий\n'+' - done correctly\n'-' - failed\n'T' - total\n\n")
+                "Для лучшего восприятия переверните телефон\n" +
+                "Кол-во пройденных заданий" +
+                "\n'+' - Done correctly" +
+                "\n'-' - Failed" +
+                "\n'T' - Total\n\n")
 
                 .append("```\n").append(resizeTail("Date:", maxResizeLen))
                 .append(resize("+", resizeLen))
@@ -602,8 +604,12 @@ public class RouteService {
         return Arrays.asList(NEXT_PROBLEM, LESSON_STAT_CMD, LESSON_DESC_CMD, FINISH_LESSON);
     }
 
-    private List<String> getStartKeyBoard() {
-        return Arrays.asList(LESSONS_CMD, FAQ);
+    private List<String> getStartKeyBoard(User user) {
+
+        if (user.getLessons().isEmpty()) {
+            return Collections.singletonList(LESSONS_CMD);
+        }
+        return Arrays.asList(LESSONS_CMD, SEVERAL_DAYS_STAT_CMD);
     }
 
     private List<String> getSupportKeyBoard(User user) {
