@@ -125,16 +125,16 @@ public class UserSession {
             return false;
         }
 
-        if (userQuestion.contains(chosenButton)) {
-            return false;
-        }
-
         char[] chosenButtonChars = chosenButton.toCharArray();
 
         if (chosenButtonChars.length != 1) {
             return false;
         }
         char chosenLetter = chosenButtonChars[0];
+
+        if (userQuestion.contains(chosenButton) || !question.getQuestion().contains(chosenButton)) {
+            return false;
+        }
 
         if (userQuestion.equals(question.getQuestion())) {
             return false;
