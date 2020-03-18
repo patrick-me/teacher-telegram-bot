@@ -270,27 +270,45 @@ public class RouteService {
                 );
                 break;
             default:
-                boolean successfulProcessed = userSession.process(newMessage);
-
-                if (successfulProcessed) {
-                    if (userSession.hasBotReplyMessageId()) {
-                        botMessageService.editMessage(botId, chatId, userSession.getBotReplyMessageId(), removeSpaceBeforeSigns(userSession.getUserQuestion()));
-                    } else {
-                        Optional<org.telegram.telegrambots.meta.api.objects.Message> oSentMessage = botMessageService.sendMessage(
-                                botId, chatId, userSession.getUserQuestion()
-                        );
-                        if (oSentMessage.isPresent()) {
-                            org.telegram.telegrambots.meta.api.objects.Message sentMessage = oSentMessage.get();
-                            userSession.setBotReplyMessageId(sentMessage.getMessageId());
-                        }
-                    }
-                }
-
-                botMessageService.deleteMessage(botId, chatId, message.getMessageId());
+                processUserInput(botId, message, newMessage, chatId, userSession);
 
         }
         userSessionService.save(userSession);
     }
+
+    private void processUserInput(int botId, org.telegram.telegrambots.meta.api.objects.Message message,
+                                  String newMessage, Long chatId, UserSession userSession) {
+
+        botMessageService.deleteMessage(botId, chatId, message.getMessageId());
+
+        boolean isMemory = isMemoryTask(userSession);
+        boolean successfulProcessed;
+        if (isMemory) {
+            successfulProcessed = userSession.processMemory(newMessage);
+        } else {
+            successfulProcessed = userSession.process(newMessage);
+        }
+
+        if (successfulProcessed) {
+            if (userSession.hasBotReplyMessageId()) {
+                String userInput = isMemory ? userSession.getUserQuestion() : removeSpaceBeforeSigns(userSession.getUserQuestion());
+                botMessageService.editMessage(botId, chatId, userSession.getBotReplyMessageId(), userInput);
+            } else {
+                Optional<org.telegram.telegrambots.meta.api.objects.Message> oSentMessage = botMessageService.sendMessage(
+                        botId, chatId, userSession.getUserQuestion()
+                );
+                if (oSentMessage.isPresent()) {
+                    org.telegram.telegrambots.meta.api.objects.Message sentMessage = oSentMessage.get();
+                    userSession.setBotReplyMessageId(sentMessage.getMessageId());
+                }
+            }
+        }
+    }
+
+    private boolean isMemoryTask(UserSession userSession) {
+        return userSession.getQuestion().getQuestionType().getName().toLowerCase().contains("memory");
+    }
+
 
     private String getDefaultReactionOnFailedAnswer() {
         int next = randomGenerator.nextInt(REACTIONS_ON_FAILED_ANSWER.size());
@@ -441,7 +459,7 @@ public class RouteService {
         userSessionService.save(userSession);
 
         botMessageService.sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
-                userSession.getUserKeyBoardButtons(), getCheckKeyBoard());
+                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), isMemoryTask(userSession) ? 7 : 3);
     }
 
     private String removeSpaceBeforeSigns(String s) {
