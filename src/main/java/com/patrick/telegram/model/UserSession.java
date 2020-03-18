@@ -100,7 +100,11 @@ public class UserSession {
 
         /* Collecting user input from keyBoard */
         userQuestion += delimiter + chosenButton;
+        removeFromKeyboard(chosenButton);
+        return true;
+    }
 
+    private void removeFromKeyboard(String chosenButton) {
         /* Remove buttons in user keyBoard */
         List<String> currentKeyBoard = toKeyBoard(userKeyBoard);
         List<String> updatedKeyBoard = new ArrayList<>();
@@ -114,6 +118,44 @@ public class UserSession {
         }
 
         userKeyBoard = fromKeyBoard(updatedKeyBoard);
+    }
+
+    public boolean processMemory(String chosenButton) {
+        if (userKeyBoard == null || !userKeyBoard.contains(chosenButton)) {
+            return false;
+        }
+
+        if (userQuestion.contains(chosenButton)) {
+            return false;
+        }
+
+        char[] chosenButtonChars = chosenButton.toCharArray();
+
+        if (chosenButtonChars.length != 1) {
+            return false;
+        }
+        char chosenLetter = chosenButtonChars[0];
+
+        if (userQuestion.equals(question.getQuestion())) {
+            return false;
+        }
+
+        if (userQuestion.length() != question.getQuestion().length()) {
+            userQuestion = question.getQuestion().replaceAll("[^\\s]", String.valueOf('\uFFEE'));
+        }
+
+        char[] userQuestionChars = userQuestion.toCharArray();
+        char[] questionChars = question.getQuestion().toCharArray();
+
+        for (int i = 0; i < questionChars.length; i++) {
+            if (chosenLetter == questionChars[i]) {
+                userQuestionChars[i] = chosenLetter;
+            }
+        }
+
+        userQuestion = new String(userQuestionChars);
+
+        removeFromKeyboard(chosenButton);
         return true;
     }
 

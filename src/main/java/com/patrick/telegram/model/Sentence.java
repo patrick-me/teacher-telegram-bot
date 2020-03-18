@@ -16,7 +16,7 @@ public class Sentence implements Serializable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
-    @Column(name = "name")
+    @Column(name = "name", length = 1024)
     private String name;
 
     @BatchSize(size = 25)

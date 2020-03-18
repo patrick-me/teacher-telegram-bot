@@ -45,6 +45,14 @@ public class BotMessageService {
                                          boolean enableMarkdown,
                                          List<String> keyBoardButtons,
                                          List<String> keyBoardControlButtons) {
+        return sendMessage(botId, chatId, text, enableMarkdown, keyBoardButtons, keyBoardControlButtons, 3);
+    }
+
+    public Optional<Message> sendMessage(int botId, long chatId, String text,
+                                         boolean enableMarkdown,
+                                         List<String> keyBoardButtons,
+                                         List<String> keyBoardControlButtons,
+                                         int numberOfElementsPerRow) {
         if (StringUtils.isEmpty(text)) {
             text = "There is no text here yet";
         }
@@ -56,7 +64,7 @@ public class BotMessageService {
                 .setText(text)
                 .enableMarkdown(enableMarkdown);
 
-        ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons);
+        ReplyKeyboardMarkup replyKeyboard = getKeyBoard(keyBoardButtons, keyBoardControlButtons, numberOfElementsPerRow);
 
         if (!keyBoardButtons.isEmpty() || !keyBoardControlButtons.isEmpty()) {
             message.setReplyMarkup(replyKeyboard);
@@ -83,16 +91,16 @@ public class BotMessageService {
         }
     }
 
-    private ReplyKeyboardMarkup getKeyBoard(List<String> keyboardElements, List<String> keyboardControlElements) {
+    private ReplyKeyboardMarkup getKeyBoard(List<String> keyboardElements, List<String> keyboardControlElements,
+                                            int numberOfElementsPerRow) {
         // Create ReplyKeyboardMarkup object
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         keyboardMarkup.setResizeKeyboard(true);
         // Create the keyboard (list of keyboard rows)
         List<KeyboardRow> keyboard = new ArrayList<>();
         // Create a keyboard row
-        //TODO: number as param
-        addRowsToKeyBoard(keyboard, keyboardElements, 3);
-        addRowsToKeyBoard(keyboard, keyboardControlElements, 3);
+        addRowsToKeyBoard(keyboard, keyboardElements, numberOfElementsPerRow);
+        addRowsToKeyBoard(keyboard, keyboardControlElements, numberOfElementsPerRow);
 
         // Set the keyboard to the markup
         keyboardMarkup.setKeyboard(keyboard);
