@@ -459,7 +459,7 @@ public class RouteService {
         userSessionService.save(userSession);
 
         botMessageService.sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
-                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), 7);
+                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), isMemoryTask(userSession) ? 7 : 3);
     }
 
     private String removeSpaceBeforeSigns(String s) {
