@@ -281,7 +281,7 @@ public class RouteService {
 
         botMessageService.deleteMessage(botId, chatId, message.getMessageId());
 
-        boolean isMemory = isMemoryTask(userSession);
+        boolean isMemory = userSession.isMemoryTask();
         boolean successfulProcessed;
         if (isMemory) {
             successfulProcessed = userSession.processMemory(newMessage);
@@ -304,11 +304,6 @@ public class RouteService {
             }
         }
     }
-
-    private boolean isMemoryTask(UserSession userSession) {
-        return userSession.getQuestion().getQuestionType().getName().toLowerCase().contains("memory");
-    }
-
 
     private String getDefaultReactionOnFailedAnswer() {
         int next = randomGenerator.nextInt(REACTIONS_ON_FAILED_ANSWER.size());
@@ -459,7 +454,7 @@ public class RouteService {
         userSessionService.save(userSession);
 
         botMessageService.sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
-                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), isMemoryTask(userSession) ? 7 : 3);
+                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), userSession.isMemoryTask() ? 7 : 3);
     }
 
     private String removeSpaceBeforeSigns(String s) {

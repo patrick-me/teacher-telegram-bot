@@ -6,7 +6,8 @@ import java.util.*;
 @Entity
 @Table(name = "UserSession")
 public class UserSession {
-    public static final String KEYBOARD_BUTTON_DELIMITER = " ; ";
+    private static final String KEYBOARD_BUTTON_DELIMITER = " ; ";
+    private static final String ONE_SPACE = " ";
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -51,6 +52,11 @@ public class UserSession {
     }
 
     public boolean isCorrect() {
+
+        if (isMemoryTask()) {
+            correct = decorate(question.getQuestion()).equals(userQuestion);
+            return correct;
+        }
         correct = question.getQuestion().equals(userQuestion);
         return correct;
     }
@@ -140,11 +146,12 @@ public class UserSession {
             return false;
         }
 
-        if (userQuestion.length() != question.getQuestion().length()) {
-            userQuestion = question.getQuestion().replaceAll("[^\\s]", String.valueOf('\uFFEE'));
+        if (userQuestion.isEmpty()) {
+            decorateFirstTime();
         }
 
-        char[] userQuestionChars = userQuestion.toCharArray();
+
+        char[] userQuestionChars = undecorate(userQuestion);
         char[] questionChars = question.getQuestion().toCharArray();
 
         for (int i = 0; i < questionChars.length; i++) {
@@ -153,10 +160,34 @@ public class UserSession {
             }
         }
 
-        userQuestion = new String(userQuestionChars);
+        userQuestion = decorate(new String(userQuestionChars));
 
         removeFromKeyboard(chosenButton);
         return true;
+    }
+
+    // TO BE ANGRY AT -> • •   • •   • • • • •   • •
+    private void decorateFirstTime() {
+        userQuestion = question.getQuestion().replaceAll("[^\\s]", '\u2022' + ONE_SPACE);
+        userQuestion = userQuestion.replaceAll("\\s\\s", ONE_SPACE + ONE_SPACE + ONE_SPACE);
+    }
+
+    // • •   • •   • • • • •   • • -> •• •• ••••• ••
+    private char[] undecorate(String mask) {
+        mask = mask.replaceAll("\\s\\s\\s", ONE_SPACE + ONE_SPACE);
+        mask = mask.replaceAll("([^\\s])\\s", "$1");
+        return mask.toCharArray();
+    }
+
+    // •• •• ••••• •• -> • •   • •   • • • • •   • •
+    private String decorate(String mask) {
+        mask = mask.replaceAll("([^\\s])", "$1" + ONE_SPACE);
+        mask = mask.replaceAll("\\s\\s", ONE_SPACE + ONE_SPACE + ONE_SPACE);
+        return mask;
+    }
+
+    public boolean isMemoryTask() {
+        return question.getQuestionType().getName().toLowerCase().contains("memory");
     }
 
     public int getId() {

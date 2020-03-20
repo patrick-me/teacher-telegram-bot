@@ -19,7 +19,7 @@ public class Question implements Serializable {
     @JoinColumn(name = "questionType_id")
     private QuestionType questionType;
 
-    @Column(name = "highlightedSentence")
+    @Column(name = "highlightedSentence", length = 1024)
     private String highlightedSentence;
     @Column(name = "question")
     private String question;
