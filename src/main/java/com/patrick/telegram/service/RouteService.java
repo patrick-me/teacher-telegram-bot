@@ -23,9 +23,11 @@ import java.util.stream.Stream;
 @Service
 public class RouteService {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+    public static final int MAX_MESSAGE_SIZE = 4096;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private static final String NEXT_PROBLEM = "Следующее задание";
+    private static final String NEXT_PROBLEM_SPECIAL = "Продолжить";
     private static final String FINISH_LESSON = "Завершить урок";
     private static final String CHECK = "Проверить";
 
@@ -212,7 +214,23 @@ public class RouteService {
                 }
             case SUPPORT_LESSONS_CMD:
                 if (user.isAdmin()) {
-                    botMessageService.sendMessage(botId, chatId, "*Информация по урокам*\n" + getLessonsInfo(), true, getStartKeyBoard(user), getSupportKeyBoard(user));
+                    String lessonsInfo = "*Информация по урокам*\n" + getLessonsInfo();
+
+                    boolean allSent = false;
+                    String messageToSend;
+                    String restMessage = lessonsInfo;
+
+                    while (!allSent) {
+                        if (restMessage.length() > MAX_MESSAGE_SIZE) {
+                            messageToSend = restMessage.substring(0, MAX_MESSAGE_SIZE);
+                            restMessage = restMessage.substring(MAX_MESSAGE_SIZE);
+                        } else {
+                            messageToSend = restMessage;
+                            allSent = true;
+                        }
+
+                        botMessageService.sendMessage(botId, chatId, messageToSend, true, getStartKeyBoard(user), getSupportKeyBoard(user));
+                    }
                     break;
                 }
             default:
@@ -225,6 +243,7 @@ public class RouteService {
         switch (newMessage) {
             case START_LESSON:
             case NEXT_PROBLEM:
+            case NEXT_PROBLEM_SPECIAL:
                 userSession.finishSession();
                 processChosenLesson(user, chatId, botId, userSession);
                 break;
@@ -256,8 +275,8 @@ public class RouteService {
 
                 String checkMessage = (userSession.isCorrect()) ? correctDesc :
                         incorrectDesc + "\n\n" +
-                                incorrectDesc1 + " " + removeSpaceBeforeSigns(userSession.getCorrectQuestion()) + "\n" +
-                                incorrectDesc2 + " " + removeSpaceBeforeSigns(userSession.getUserQuestion());
+                                incorrectDesc1 + " " + removeSpacesByRules(userSession.getCorrectQuestion()) + "\n" +
+                                incorrectDesc2 + " " + removeSpacesByRules(userSession.getUserQuestion());
 
                 botMessageService.sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
                 sendPanda(botId, chatId, user.getId(), userSession);
@@ -291,7 +310,7 @@ public class RouteService {
 
         if (successfulProcessed) {
             if (userSession.hasBotReplyMessageId()) {
-                String userInput = isMemory ? userSession.getUserQuestion() : removeSpaceBeforeSigns(userSession.getUserQuestion());
+                String userInput = isMemory ? userSession.getUserQuestion() : removeSpacesByRules(userSession.getUserQuestion());
                 botMessageService.editMessage(botId, chatId, userSession.getBotReplyMessageId(), userInput);
             } else {
                 Optional<org.telegram.telegrambots.meta.api.objects.Message> oSentMessage = botMessageService.sendMessage(
@@ -457,12 +476,42 @@ public class RouteService {
                 userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), userSession.isMemoryTask() ? 7 : 3);
     }
 
+    private String removeSpacesByRules(String s) {
+        s = removeSpaceBeforeSigns(s);
+        s = removeSpaceAfterSigns(s);
+        return s;
+    }
+
     private String removeSpaceBeforeSigns(String s) {
-        return s.replace(" ,", ",")
-                .replace(" .", ".")
-                .replace(" !", "!")
-                .replace(" ?", "?")
-                .replace(" :", ":");
+        String symbols = configService.getCommandDescription(
+                "Символы / слова перед которыми будут удаляться пробелы только для визуализации" +
+                        " (разделитель ' ; ' с пробелами до и после)",
+                ", ; . ; ! ; ? ; :"
+        );
+
+        List<String> symbolList = Stream.of(symbols.split(" ; ")).collect(Collectors.toList());
+
+        for (String sym : symbolList) {
+            s = s.replace(" " + sym, sym);
+        }
+
+        return s;
+    }
+
+    private String removeSpaceAfterSigns(String s) {
+        String symbols = configService.getCommandDescription(
+                "Символы / слова после которых будут удаляться пробелы только для визуализации" +
+                        " (разделитель ' ; ' с пробелами до и после)",
+                "€ ; ¥ ; £ ; RUR ; ₽"
+        );
+
+        List<String> symbolList = Stream.of(symbols.split(" ; ")).collect(Collectors.toList());
+
+        for (String sym : symbolList) {
+            s = s.replace(sym + " ", sym);
+        }
+
+        return s;
     }
 
     private String getLessonDesc(UserSession currentUserSession) {
