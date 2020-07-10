@@ -241,9 +241,11 @@ public class RouteService {
 
     private void processActiveUserSession(int botId, org.telegram.telegrambots.meta.api.objects.Message message, String newMessage, User user, Long chatId, UserSession userSession) {
         switch (newMessage) {
+            case NEXT_PROBLEM_SPECIAL:
+                /* To special button marks answer as correct one: Продолжить = Продолжить */
+                userSession.process(newMessage);
             case START_LESSON:
             case NEXT_PROBLEM:
-            case NEXT_PROBLEM_SPECIAL:
                 userSession.finishSession();
                 processChosenLesson(user, chatId, botId, userSession);
                 break;
@@ -472,8 +474,18 @@ public class RouteService {
         UserSession userSession = new UserSession(user, optionalRandomQuestion.get(), lesson);
         userSessionService.save(userSession);
 
+        List<String> specialKeyBoard;
+        List<String> userKeyBoardButtons = new ArrayList<>(userSession.getUserKeyBoardButtons());
+
+        if (userKeyBoardButtons.contains(NEXT_PROBLEM_SPECIAL)) {
+            specialKeyBoard = getContinueKeyBoard();
+            userKeyBoardButtons.remove(NEXT_PROBLEM_SPECIAL);
+        } else {
+            specialKeyBoard = getCheckKeyBoard();
+        }
+
         botMessageService.sendMessage(botId, chatId, userSession.getQuestion().getHighlightedSentence(), true,
-                userSession.getUserKeyBoardButtons(), getCheckKeyBoard(), userSession.isMemoryTask() ? 7 : 3);
+                userKeyBoardButtons, specialKeyBoard, userSession.isMemoryTask() ? 7 : 3);
     }
 
     private String removeSpacesByRules(String s) {
@@ -660,6 +672,10 @@ public class RouteService {
 
     private List<String> getCheckKeyBoard() {
         return Arrays.asList(CHECK, FINISH_LESSON);
+    }
+
+    private List<String> getContinueKeyBoard() {
+        return Arrays.asList(NEXT_PROBLEM_SPECIAL, FINISH_LESSON);
     }
 
     private List<String> getFinishKeyBoard() {
