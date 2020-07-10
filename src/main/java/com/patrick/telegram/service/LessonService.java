@@ -47,11 +47,29 @@ public class LessonService {
             return new ArrayList<>();
         } else {
             User user = optionalUser.get();
-            user.getLessons().size();
+            user.getLessons().size(); /* Already forgot for what. Maybe kinda a lazy load trigger. */
             return user
                     .getLessons()
                     .stream()
-                    .sorted(Comparator.comparing(Lesson::getName))
+                    .sorted(
+                            Comparator.comparing(Lesson::getName, (x, y) -> {
+                                /* Урок 1.26 A Супер */
+                                String[] xParts = x.split(" ");
+                                String[] yParts = y.split(" ");
+
+
+                                if (xParts.length > 2 && yParts.length >= 2) {
+                                    /* Урок 1.26 / Урок 1.1 */
+                                    return Integer.compare(
+                                            xParts[0].length() + xParts[1].length(),
+                                            yParts[0].length() + yParts[1].length()
+                                    );
+                                }
+                                return Integer.compare(x.length(), y.length());
+                            })
+                                    .thenComparing(Lesson::getName, Comparator.naturalOrder())
+
+                    )
                     .collect(Collectors.toList());
         }
     }

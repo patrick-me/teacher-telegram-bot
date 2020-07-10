@@ -58,7 +58,7 @@ public class RouteService {
 
     public static final int REQUIRED_USER_LAST_LOGIN_TIME_IN_DAYS = 60;
 
-    private Random randomGenerator = new Random();
+    private final Random randomGenerator = new Random();
     private static final SimpleDateFormat moscowDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     static {
@@ -275,10 +275,36 @@ public class RouteService {
                 String incorrectDesc1 = "".equals(incorrectDescValue1) ? "_Ожидается_:" : incorrectDescValue1;
                 String incorrectDesc2 = "".equals(incorrectDescValue2) ? "_Ваш ответ_:" : incorrectDescValue2;
 
-                String checkMessage = (userSession.isCorrect()) ? correctDesc :
-                        incorrectDesc + "\n\n" +
-                                incorrectDesc1 + " " + removeSpacesByRules(userSession.getCorrectQuestion()) + "\n" +
-                                incorrectDesc2 + " " + removeSpacesByRules(userSession.getUserQuestion());
+                String correctAnswer = removeSpacesByRules(userSession.getCorrectQuestion());
+                String userAnswer = removeSpacesByRules(userSession.getUserQuestion());
+
+                String checkMessage = "";
+
+                if (userSession.isCorrect()) {
+                    checkMessage = correctDesc;
+                } else {
+                    if (userSession.isMemoryTask()) {
+                        Integer memoryMistakesCount = userSession.getMemoryMistakesCount();
+                        String memoryMistakeMessage = "";
+
+                        if (memoryMistakesCount != null && memoryMistakesCount > 3) {
+                            memoryMistakeMessage = String.format(
+                                    "Вы неправильно ответили всего несколько раз: (%s), к сожалению это больше > 3\n\n",
+                                    memoryMistakesCount
+                            );
+                        }
+
+                        checkMessage = memoryMistakeMessage;
+                        correctAnswer = userSession.decorate(correctAnswer);
+                    }
+
+                    String incorrectMessage = incorrectDesc + "\n\n" +
+                            incorrectDesc1 + " " + correctAnswer + "\n" +
+                            incorrectDesc2 + " " + userAnswer;
+
+                    checkMessage += incorrectMessage;
+                }
+
 
                 botMessageService.sendMessage(botId, chatId, checkMessage, getFinishKeyBoard());
                 sendPanda(botId, chatId, user.getId(), userSession);
@@ -664,7 +690,7 @@ public class RouteService {
         if (!questions.isEmpty() && !successfulAnsweredQuestions.isEmpty()) {
             int percent = 100 * successfulAnsweredQuestions.size() / questions.size();
             if (percent > 0) {
-                progress = "\n" + percent + "%";
+                progress = "\n " + percent + "%";
             }
         }
         return progress;

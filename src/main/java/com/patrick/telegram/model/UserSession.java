@@ -33,6 +33,8 @@ public class UserSession {
     private Date startDate;
     @Column
     private Integer botReplyMessageId;
+    @Column
+    private Integer memoryMistakesCount;
 
     public UserSession() {
     }
@@ -45,6 +47,7 @@ public class UserSession {
         userKeyBoard = question.getKeyboard();
         userQuestion = "";
         startDate = new Date();
+        memoryMistakesCount = 0;
     }
 
     public boolean isFinished() {
@@ -55,7 +58,7 @@ public class UserSession {
 
         if (isMemoryTask()) {
             correct = decorate(question.getQuestion()).equals(userQuestion);
-            return correct;
+            return correct && memoryMistakesCount <= 3;
         }
         correct = question.getQuestion().equals(userQuestion);
         return correct;
@@ -127,18 +130,27 @@ public class UserSession {
     }
 
     public boolean processMemory(String chosenButton) {
+        /* Validate that we have the keyboard with letters, and user sent the letter from the keyboard*/
         if (userKeyBoard == null || !userKeyBoard.contains(chosenButton)) {
             return false;
         }
 
         char[] chosenButtonChars = chosenButton.toCharArray();
-
+        /* Validate that user sent one letter, not a word */
         if (chosenButtonChars.length != 1) {
             return false;
         }
         char chosenLetter = chosenButtonChars[0];
 
-        if (userQuestion.contains(chosenButton) || !question.getQuestion().contains(chosenButton)) {
+        /* Validate that user already typed the letter */
+        if (userQuestion.contains(chosenButton)) {
+            return false;
+        }
+
+        /* Validate that user typed correct the letter */
+        if (!question.getQuestion().contains(chosenButton)) {
+            memoryMistakesCount = memoryMistakesCount == null ? 0 : memoryMistakesCount;
+            memoryMistakesCount++;
             return false;
         }
 
@@ -180,7 +192,7 @@ public class UserSession {
     }
 
     // •• •• ••••• •• -> • •   • •   • • • • •   • •
-    private String decorate(String mask) {
+    public String decorate(String mask) {
         mask = mask.replaceAll("([^\\s])", "$1" + ONE_SPACE);
         mask = mask.replaceAll("\\s\\s", ONE_SPACE + ONE_SPACE + ONE_SPACE);
         return mask;
@@ -216,5 +228,9 @@ public class UserSession {
 
     public void setBotReplyMessageId(Integer botReplyMessageId) {
         this.botReplyMessageId = botReplyMessageId;
+    }
+
+    public Integer getMemoryMistakesCount() {
+        return memoryMistakesCount;
     }
 }
