@@ -57,8 +57,8 @@ public class UserSession {
     public boolean isCorrect() {
 
         if (isMemoryTask()) {
-            correct = decorate(question.getQuestion()).equals(userQuestion);
-            return correct && memoryMistakesCount <= 3;
+            correct = decorate(question.getQuestion()).equals(userQuestion) && memoryMistakesCount <= 3;
+            return correct;
         }
         correct = question.getQuestion().equals(userQuestion);
         return correct;
