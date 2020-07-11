@@ -439,7 +439,6 @@ public class RouteService {
 
         StringBuilder userInfo = new StringBuilder();
         String userLessonsWithProgress = getLessonsKeyBoard(chosenUser.getId()).stream()
-                .sorted()
                 .map(l -> l.replace("\n", " - "))
                 .collect(Collectors.joining("\n"));
 

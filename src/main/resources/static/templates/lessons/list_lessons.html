@@ -1,7 +1,7 @@
 <br>
 <div style="height: 400px; overflow-y: scroll;">
     <br>
-    <div class="list-group-item" ng-repeat="entity in lessons | orderBy: 'name' : false : alphaLengthComparator">
+    <div class="list-group-item" ng-repeat="entity in lessons">
         <div class="row" style="padding: 0px 16px 0px 16px">
             <div class="col-md-3">{{ entity.name }}</div>
             <div class="col-md-6"><i>{{ entity.description }}</i></div>
